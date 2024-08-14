@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<description>AMBIT 2 core functionality</description>
+	<parent>
+		<artifactId>ambit2-all</artifactId>
+		<groupId>ambit</groupId>
+		<version>3.3.0-SNAPSHOT</version>
+	</parent>
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>ambit2-core</artifactId>
+	<packaging>jar</packaging>
+	<name>ambit2-core</name>
+	<!-- <repositories> <repository> <id>UCC-repo</id> <name>UCC repositories</name> 
+		<url>https://maven.ch.cam.ac.uk/content/groups/ucc/</url> </repository> <repository> 
+		<id>UCC-repo-proxy</id> <name>UCC repositories proxy</name> <url>https://nexus.ideaconsult.net/content/repositories/ucc-repo/</url> 
+		</repository> </repositories> -->
+	<properties>
+		<jdk.version>22</jdk.version>
+		<maven.compiler.source>${jdk.version}</maven.compiler.source>
+		<maven.compiler.target>${jdk.version}</maven.compiler.target>
+		<cdk.version>2.9</cdk.version>
+		<jackson.version>2.17.2</jackson.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+	<dependencies>
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>${junit.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>ambit</groupId>
+			<artifactId>ambit2-base</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>ambit</groupId>
+			<artifactId>ambit2-rules</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.sun.xml.stream</groupId>
+			<artifactId>sjsxp</artifactId>
+			<version>1.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-core</artifactId>
+			<version>${cdk.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-isomorphism</artifactId>
+			<version>${cdk.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-atomtype</artifactId>
+			<version>${cdk.version}</version>
+		</dependency>
+		<!-- <dependency> <groupId>org.openscience.cdk</groupId> <artifactId>cdk-data</artifactId> 
+			<version>${cdk.version}</version> </dependency> <dependency> <groupId>org.openscience.cdk</groupId> 
+			<artifactId>cdk-smsd</artifactId> <version>${cdk.version}</version> </dependency> -->
+		<dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-sdg</artifactId>
+			<version>${cdk.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-legacy</artifactId>
+			<version>${cdk.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-extra</artifactId>
+			<version>${cdk.version}</version>
+			<scope>compile</scope>
+		</dependency>
+
+		<!-- <dependency> <groupId>org.openscience.cdk</groupId> <artifactId>cdk-ionpot</artifactId> 
+			<version>${cdk.version}</version> </dependency> -->
+
+		<!-- <dependency> <groupId>org.openscience.cdk</groupId> <artifactId>cdk-qsarionpot</artifactId> 
+			<version>${cdk.version}</version> </dependency> -->
+		<dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-interfaces</artifactId>
+			<version>${cdk.version}</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-standard</artifactId>
+			<version>${cdk.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-libiocml</artifactId>
+			<version>${cdk.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-io</artifactId>
+			<version>${cdk.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-ioformats</artifactId>
+			<version>${cdk.version}</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-silent</artifactId>
+			<version>${cdk.version}</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-log4j</artifactId>
+			<version>${cdk.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-inchi</artifactId>
+			<version>${cdk.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-jniinchi-support</artifactId>
+			<version>${cdk.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-data</artifactId>
+			<version>${cdk.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-dict</artifactId>
+			<version>${cdk.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-structgen</artifactId>
+			<version>${cdk.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-pdb</artifactId>
+			<version>${cdk.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-pdbcml</artifactId>
+			<version>${cdk.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-fingerprint</artifactId>
+			<version>${cdk.version}</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>${jackson.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-csv</artifactId>
+			<version>1.2</version>
+		</dependency>
+
+	</dependencies>
+	<licenses>
+		<license>
+			<name>LGPL</name>
+			<url>http://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt</url>
+			<distribution>repo</distribution>
+			<comments>LGPL 2</comments>
+		</license>
+	</licenses>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<skip>true</skip>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+	<dependencyManagement>
+		<dependencies></dependencies>
+	</dependencyManagement>
+</project>

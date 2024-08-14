@@ -1,0 +1,62 @@
+ -----
+ AMBIT Downloads
+ -----
+ Nina Jeliazkova
+ -----
+ 2018/01/10
+ -----
+
+AMBIT Web services 
+~~~~~~~~~~
+
+ [Latest release]{{{https://sourceforge.net/projects/ambit/files/Ambit2/AMBIT%20REST%20web%20services/services/ambit-rest-3.1.0/} ambit2.war 3.1.0}} | {{{https://sourceforge.net/projects/ambit/files/Ambit2/AMBIT%20REST%20web%20services/services/ambit-rest-3.1.0/}README}}
+
+ [Previous 3.x release] {{{https://sourceforge.net/projects/ambit/files/Ambit2/AMBIT%20REST%20web%20services/services/ambit-rest-3.0.2/}ambit2.war 3.0.2}} | {{{https://sourceforge.net/projects/ambit/files/Ambit2/AMBIT%20REST%20web%20services/services/ambit-rest-3.0.2/}README}}
+   
+ [Development] {{{https://nexus.ideaconsult.net/#nexus-search;gav~~ambit2-www~3.2.0-SNAPSHOT~war~}ambit2.war 3.2.0-SNAPSHOT}}
+
+ [Custom releases] {{{./enanomapper.html} eNanoMapper prototype database}} 
+
+Standalone applications
+~~~~~~~~~~
+
+ [AMBIT command line] {{{./download_ambitcli.html}Standardisation, file processing, database import}}
+ 
+ [AMBIT Reactor] {{{./reactor.html}Simulation of chemical reactions and synthetic accessibility}} 
+  
+ [Tautomers generation (command line)] {{{http://sourceforge.net/projects/ambit/files/Ambit2/AMBIT%20applications/tautomers/ambit-tautomers-2.0.0-SNAPSHOT.jar/download}ambit-tautomers-2.0.0-SNAPSHOT.jar}} 
+
+ [QMRF Editor] {{{http://qmrf.sf.net}http://qmrf.sf.net}}
+ 
+ [Molbrowser] {{{https://github.com/ideaconsult/apps-ambit/tree/master/appdomain-example}Converts SDF file to a static web page}}
+ 
+ [Applicability domain] {{{./download_ambitdiscovery.html}AMBIT Discovery}}
+ 
+AMBIT modules
+~~~~~~~~~~
+
+ AMBIT consists of multiple {{{http://maven.apache.org/}Maven modules}} which can be used in a stand alone mode or embedded in other applications. 
+ 
+ [Latest release] {{{https://sourceforge.net/projects/ambit/files/Ambit2/AMBIT_modules/3.1.0/}ambit2-*-3.1.0.jar}}
+
+ [Previous releases] {{{http://sourceforge.net/projects/ambit/files/Ambit2/AMBIT_modules/}Download}}
+
+ [ambit-smarts] {{{./smarts.html}SMARTS}} and {{{./smirks.html}SMIRKS}} support 
+ 
+ [ambit-tautomers] {{{https://nexus.ideaconsult.net/#nexus-search;quick~ambit-tautomers}maven artifact}} and {{{https://github.com/ideaconsult/apps-ambit/tree/master/tautomers-example}code examples}}. 
+ 
+AMBIT API
+~~~~~~~~~~
+
+  {{{http://ideaconsult.github.io/apps-ambit/apidocs/}AMBIT REST API documentation (live)}}  
+
+Source code examples
+~~~~~~~~~~
+
+ {{{https://github.com/ideaconsult/apps-ambit/tree/master/tautomers-example}How to use ambit2-tautomer package}}
+ 
+ {{{https://github.com/ideaconsult/apps-ambit/tree/master/smirks-example}How to use AMBIT SMIRKS implementation}}
+  
+ {{{https://github.com/ideaconsult/apps-ambit/tree/master/appdomain-example}How to use applicability domain methods in AMBIT}}
+ 
+ 
