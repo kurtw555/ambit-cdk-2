@@ -39,7 +39,7 @@
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
-			<version>17.0</version>
+			<version>33.2.1-jre</version>
 		</dependency>
 	</dependencies>
 	<properties>
@@ -51,7 +51,7 @@
 				<!-- UML class diagrams -->
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>2.7</version>
+				<version>3.8</version>
 				<!-- <docletPath>/path/to/UmlGraph.jar</docletPath> -->
 				<configuration>
 					<source>1.7</source>

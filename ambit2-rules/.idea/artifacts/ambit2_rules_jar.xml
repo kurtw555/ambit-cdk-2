@@ -1,0 +1,16 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="ambit2-rules:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/ambit2_rules_jar</output-path>
+    <root id="archive" name="ambit2-rules.jar">
+      <element id="module-output" name="ambit2-rules" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/fasterxml/jackson/core/jackson-annotations/2.4.0/jackson-annotations-2.4.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/google/guava/guava/17.0/guava-17.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/fasterxml/jackson/core/jackson-databind/2.4.2/jackson-databind-2.4.2.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/ambit/ambit2-base/3.3.0-SNAPSHOT/ambit2-base-3.3.0-20181211.201714-135.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/net/idea/modbcum-e/1.0.9/modbcum-e-1.0.9.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/fasterxml/jackson/core/jackson-core/2.4.2/jackson-core-2.4.2.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/net/idea/modbcum-i/1.0.9/modbcum-i-1.0.9.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/net/idea/modbcum-p/1.0.9/modbcum-p-1.0.9.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
