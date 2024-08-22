@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="ambit2-some:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/ambit2_some_jar</output-path>
+    <root id="archive" name="ambit2-some.jar">
+      <element id="module-output" name="ambit2-some" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../lib/ambit2-core.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../lib/ambit2-rendering.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

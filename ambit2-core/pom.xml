@@ -35,12 +35,18 @@
 		<dependency>
 			<groupId>ambit</groupId>
 			<artifactId>ambit2-base</artifactId>
-			<version>${project.version}</version>
+		<!--	<version>${project.version}</version> -->
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/../lib/ambit2-base.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>ambit</groupId>
 			<artifactId>ambit2-rules</artifactId>
-			<version>${project.version}</version>
+			<!--	<version>${project.version}</version> -->
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/../lib/ambit2-rules.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>com.sun.xml.stream</groupId>

@@ -20,16 +20,30 @@
     <dependency>
       <groupId>ambit</groupId>
       <artifactId>ambit2-core</artifactId>
-      <version>${project.version}</version>
+      <!--	<version>${project.version}</version> -->
+      <version>1.0</version>
+      <scope>system</scope>
+      <systemPath>${project.basedir}/../lib/ambit2-core.jar</systemPath>
       <type>jar</type>
     </dependency>
+    <dependency>
+      <groupId>cdk</groupId>
+      <artifactId>cdk-legacy</artifactId>
+      <!--	<version>${project.version}</version> -->
+      <version>1.0</version>
+      <scope>system</scope>
+      <systemPath>${project.basedir}/../lib/cdk-legacy.jar</systemPath>
+      <type>jar</type>
+    </dependency>
+    <!--
     <dependency>
       <groupId>ambit</groupId>
       <artifactId>ambit2-core</artifactId>
       <version>${project.version}</version>
       <classifier>tests</classifier>
       <scope>test</scope>
-    </dependency>    
+    </dependency>
+    -->
     <!-- 
   	<dependency>
   		<groupId>ambit</groupId>

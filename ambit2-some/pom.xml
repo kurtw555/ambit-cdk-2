@@ -17,6 +17,23 @@ http://www.dddc.ac.cn/adme/myzheng/SOME_1_0.tar.gz.
     <url>http://www.ideaconsult.net</url>
   </organization>
   <dependencies>
+      <dependency>
+          <groupId>ambit</groupId>
+          <artifactId>ambit2-core</artifactId>
+          <!--	<version>${project.version}</version> -->
+          <version>1.0</version>
+          <scope>system</scope>
+          <systemPath>${project.basedir}/../lib/ambit2-core.jar</systemPath>
+      </dependency>
+      <dependency>
+          <groupId>ambit</groupId>
+          <artifactId>ambit2-rendering</artifactId>
+          <!--	<version>${project.version}</version> -->
+          <version>1.0</version>
+          <scope>system</scope>
+          <systemPath>${project.basedir}/../lib/ambit2-rendering.jar</systemPath>
+      </dependency>
+<!--
     <dependency>
       <groupId>ambit</groupId>
       <artifactId>ambit2-core</artifactId>
@@ -24,6 +41,7 @@ http://www.dddc.ac.cn/adme/myzheng/SOME_1_0.tar.gz.
       <type>jar</type>
       <scope>compile</scope>
     </dependency>
+
     <dependency>
       <groupId>ambit</groupId>
       <artifactId>ambit2-rendering</artifactId>
@@ -31,6 +49,7 @@ http://www.dddc.ac.cn/adme/myzheng/SOME_1_0.tar.gz.
       <type>jar</type>
       <scope>compile</scope>
     </dependency>
+-->
   </dependencies>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
