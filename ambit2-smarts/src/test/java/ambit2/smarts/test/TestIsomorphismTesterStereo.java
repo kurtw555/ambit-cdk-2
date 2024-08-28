@@ -2,10 +2,11 @@ package ambit2.smarts.test;
 
 import java.util.List;
 
+import java.util.logging.Logger;
 import org.openscience.cdk.interfaces.IAtomContainer;
 import org.openscience.cdk.isomorphism.matchers.IQueryAtomContainer;
 import org.openscience.cdk.silent.SilentChemObjectBuilder;
-import org.openscience.cdk.tools.LoggingTool;
+import org.openscience.cdk.tools.ILoggingTool;
 
 import ambit2.smarts.IsomorphismTester;
 import ambit2.smarts.SmartsHelper;
@@ -17,7 +18,7 @@ import junit.framework.TestSuite;
 
 public class TestIsomorphismTesterStereo extends TestCase
 {
-	public LoggingTool logger;	
+	public Logger logger;
 	public SmartsParser sp = new SmartsParser();
 	public SmartsManager man = new SmartsManager(SilentChemObjectBuilder.getInstance());
 	public IsomorphismTester isoTester = new IsomorphismTester();
@@ -28,7 +29,8 @@ public class TestIsomorphismTesterStereo extends TestCase
 	
 	public TestIsomorphismTesterStereo() 
 	{   
-		logger = new LoggingTool(this);
+		//logger = new LoggingTool(this);
+		logger = Logger.getLogger(this.getClass().getName());
 		isoTester.setFlagCheckStereoElements(true);
 	}
 	

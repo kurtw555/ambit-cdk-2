@@ -25,6 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA
 package ambit2.smarts.test;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
@@ -34,7 +35,7 @@ import org.openscience.cdk.interfaces.IAtomContainer;
 import org.openscience.cdk.isomorphism.matchers.IQueryAtomContainer;
 import org.openscience.cdk.silent.SilentChemObjectBuilder;
 import org.openscience.cdk.smiles.SmilesParser;
-import org.openscience.cdk.tools.LoggingTool;
+import org.openscience.cdk.tools.ILoggingTool;
 import org.openscience.cdk.tools.manipulator.AtomContainerManipulator;
 
 import ambit2.core.helper.CDKHueckelAromaticityDetector;
@@ -53,7 +54,7 @@ public class TestRecursiveSmartsSearch extends TestCase {
 	public List<List<Integer>> matchingAtoms = null;
 	public SmartsParser smartsParser = new SmartsParser();
 	public SmartsManager man = new SmartsManager(SilentChemObjectBuilder.getInstance());
-	public LoggingTool logger;
+	public Logger logger;
 	public IQueryAtomContainer mQuery;
 	public IAtomContainer mTarget;
 	SmartsHelper helper = new SmartsHelper(SilentChemObjectBuilder.getInstance());

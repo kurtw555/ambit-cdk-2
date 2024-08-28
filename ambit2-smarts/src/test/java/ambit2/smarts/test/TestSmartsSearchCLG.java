@@ -1,22 +1,25 @@
 package ambit2.smarts.test;
 
+import java.util.logging.Logger;
+
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
 import org.openscience.cdk.silent.SilentChemObjectBuilder;
-import org.openscience.cdk.tools.LoggingTool;
+import org.openscience.cdk.tools.ILoggingTool;
 
 import ambit2.smarts.SmartsManager;
 
 public class TestSmartsSearchCLG extends TestCase
 {
-	public LoggingTool logger;
+	public Logger logger;
 	SmartsManager man = new SmartsManager(SilentChemObjectBuilder.getInstance());
 	
 	public TestSmartsSearchCLG() 
 	{   
-		logger = new LoggingTool(this);
+		//logger = new LoggingTool(this);
+		logger = Logger.getLogger (this.getClass().getName());
 		//TestUtilities.man is used by function boolSearch()
 		TestUtilities.man.setUseCDKIsomorphismTester(false); //by default it is true
 	}
