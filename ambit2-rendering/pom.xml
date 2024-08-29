@@ -36,6 +36,14 @@
       <version>${cdk.version}</version>
       <scope>compile</scope>
     </dependency>
+<!--
+    <dependency>
+      <groupId>org.openscience.cdk</groupId>
+      <artifactId>cdk-renderextra</artifactId>
+      <version>${cdk.version}</version>
+      <scope>compile</scope>
+    </dependency>
+-->
     <dependency>
       <groupId>org.openscience.cdk</groupId>
       <artifactId>cdk-renderawt</artifactId>
