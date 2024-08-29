@@ -19,10 +19,16 @@
 		<jdk.version>22</jdk.version>
 		<maven.compiler.source>${jdk.version}</maven.compiler.source>
 		<maven.compiler.target>${jdk.version}</maven.compiler.target>
-		<cdk.version>2.9</cdk.version>
+		<cdk.version>2.10-SNAPSHOT</cdk.version>
 		<jackson.version>2.17.2</jackson.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
+	<repositories>
+		<repository>
+			<id>ossrh</id>
+			<url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+		</repository>
+	</repositories>
 	<dependencies>
 
 		<dependency>

@@ -12,6 +12,11 @@
       <option name="url" value="http://mvnrepository.com/" />
     </remote-repository>
     <remote-repository>
+      <option name="id" value="ucc" />
+      <option name="name" value="ucc" />
+      <option name="url" value="https://maven.ch.cam.ac.uk/content/repositories/releases" />
+    </remote-repository>
+    <remote-repository>
       <option name="id" value="nexus-idea" />
       <option name="name" value="nexus-idea" />
       <option name="url" value="https://nexus.ideaconsult.net/content/repositories/thirdparty" />
