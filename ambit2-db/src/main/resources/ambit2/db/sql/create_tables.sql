@@ -7,7 +7,7 @@ SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL';
 -- -----------------------------------------------------
 DROP TABLE IF EXISTS `ausers`;
 CREATE TABLE `ausers` (
-  `user_name` varchar(16) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
+  `user_name` varchar(32) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
   `email` varchar(45) NOT NULL,
   `title` varchar(45) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '""',
   `firstname` varchar(45) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '""',
@@ -192,6 +192,7 @@ CREATE TABLE `substance_protocolapplication` (
   `purposeFlag` varchar(32) DEFAULT NULL,
   `studyResultType` varchar(128) DEFAULT NULL COMMENT 'experimental result\nestimated by calculation\nread-across\n(Q)SAR',
   `investigation_uuid` varbinary(16) DEFAULT NULL COMMENT 'groups protocol applications into investigations',
+  `assay_uuid` varbinary(16) DEFAULT NULL,
   PRIMARY KEY (`document_prefix`,`document_uuid`),
   KEY `substance` (`substance_prefix`,`substance_uuid`),
   KEY `endpoint` (`endpoint`),
@@ -201,8 +202,11 @@ CREATE TABLE `substance_protocolapplication` (
   KEY `topcategory` (`topcategory`,`endpointcategory`,`interpretation_result`),
   KEY `xse` (`substance_prefix`,`substance_uuid`,`topcategory`,`endpointcategory`,`interpretation_result`),
   KEY `xinvestication` (`investigation_uuid`),
+  KEY `xassay` (`topcategory`,`endpointcategory`,`assay_uuid`),
   CONSTRAINT `substance-x` FOREIGN KEY (`substance_prefix`, `substance_uuid`) REFERENCES `substance` (`prefix`, `uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
 -- -----------------------------------------------------
 -- Table `substance_experiment`
 -- this is intentionally denormalized table
@@ -227,18 +231,17 @@ CREATE TABLE `substance_experiment` (
   `err` double DEFAULT NULL,
   `substance_prefix` varchar(6) DEFAULT NULL,
   `substance_uuid` varbinary(16) DEFAULT NULL,
-  `resulttype` enum('RAW','DOSERESPONSE','AGGREGATED','NOTSPECIFIED') DEFAULT 'NOTSPECIFIED',
+  `resulttype` varchar(32) DEFAULT NULL,
   `resultgroup` int(11) DEFAULT NULL,
   PRIMARY KEY (`idresult`),
   KEY `document_id` (`document_uuid`,`document_prefix`),
   KEY `endpoint` (`endpoint`),
   KEY `document-x` (`document_prefix`,`document_uuid`),
   KEY `hash-x` (`endpointhash`),
-  KEY `category-x` (`topcategory`,`endpointcategory`,`endpoint`,`endpointhash`),
   KEY `substance-x` (`substance_prefix`,`substance_uuid`),
+  KEY `category-x` (`topcategory`,`endpointcategory`,`endpoint`,`unit`,`resulttype`,`endpointhash`),
   CONSTRAINT `document-x` FOREIGN KEY (`document_prefix`, `document_uuid`) REFERENCES `substance_protocolapplication` (`document_prefix`, `document_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
-
 
 -- -----------------------------------------------------
 -- A collection of substances and endpoints 
@@ -248,7 +251,7 @@ DROP TABLE IF EXISTS `bundle`;
 CREATE TABLE `bundle` (
   `idbundle` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT 'default',
-  `user_name` varchar(16) COLLATE utf8_bin DEFAULT NULL,
+  `user_name` varchar(32) COLLATE utf8_bin DEFAULT NULL,
   `idreference` int(11) unsigned NOT NULL,
   `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `licenseURI` varchar(128) COLLATE utf8_bin NOT NULL DEFAULT 'Unknown',
@@ -357,6 +360,7 @@ CREATE TABLE `bundle_substance_protocolapplication` (
   `deleted` tinyint(4) DEFAULT '0',
   `remarks` varchar(45) DEFAULT NULL,
   `investigation_uuid` varbinary(16) DEFAULT NULL COMMENT 'groups protocol applications into investigations',
+  `assay_uuid` varbinary(16) DEFAULT NULL,
   PRIMARY KEY (`idbundle`,`document_prefix`,`document_uuid`),
   KEY `bsubstance` (`substance_prefix`,`substance_uuid`),
   KEY `bendpoint` (`endpoint`),
@@ -366,6 +370,7 @@ CREATE TABLE `bundle_substance_protocolapplication` (
   KEY `btopcategory` (`topcategory`,`endpointcategory`,`interpretation_result`),
   KEY `bxse` (`substance_prefix`,`substance_uuid`,`topcategory`,`endpointcategory`),
   KEY `idbundle_idx` (`idbundle`),
+  KEY `bxassay` (`topcategory`,`endpointcategory`,`assay_uuid`),
   CONSTRAINT `bsubstance-p` FOREIGN KEY (`substance_prefix`, `substance_uuid`) REFERENCES `substance` (`prefix`, `uuid`) ON UPDATE CASCADE,
   CONSTRAINT `idbundle` FOREIGN KEY (`idbundle`) REFERENCES `bundle` (`idbundle`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -397,6 +402,8 @@ CREATE TABLE `bundle_substance_experiment` (
   `copied` tinyint(4) DEFAULT '0',
   `deleted` tinyint(4) DEFAULT '0',
   `remarks` varchar(45) DEFAULT NULL,
+  `resulttype` varchar(32) DEFAULT NULL,
+  `resultgroup` int(11) DEFAULT NULL,
   PRIMARY KEY (`idresult`,`idbundle`),
   KEY `bdocument_id` (`idbundle`,`document_uuid`,`document_prefix`),
   KEY `bendpoint` (`endpoint`),
@@ -405,10 +412,9 @@ CREATE TABLE `bundle_substance_experiment` (
   KEY `bcategory-x` (`topcategory`,`endpointcategory`,`endpoint`,`endpointhash`),
   KEY `bsubstance-x` (`substance_prefix`,`substance_uuid`),
   KEY `idb_idx` (`idbundle`),
-  CONSTRAINT `idb` FOREIGN KEY (`idbundle`) REFERENCES `bundle` (`idbundle`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `bdocument-x` FOREIGN KEY (`idbundle`, `document_prefix`, `document_uuid`) REFERENCES `bundle_substance_protocolapplication` (`idbundle`, `document_prefix`, `document_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
+  CONSTRAINT `bdocument-x` FOREIGN KEY (`idbundle`, `document_prefix`, `document_uuid`) REFERENCES `bundle_substance_protocolapplication` (`idbundle`, `document_prefix`, `document_uuid`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `idb` FOREIGN KEY (`idbundle`) REFERENCES `bundle` (`idbundle`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
 
 -- -----------------------------------------------------
@@ -482,6 +488,7 @@ CREATE TABLE `bundle_final_experiment` (
   `copied` tinyint(4) DEFAULT '0',
   `deleted` tinyint(4) DEFAULT '0',
   `remarks` varchar(45) DEFAULT NULL,
+  `resulttype` varchar(32) DEFAULT NULL,
   PRIMARY KEY (`idresult`,`idbundle`),
   KEY `fdocument_id` (`idbundle`,`document_uuid`,`document_prefix`),
   KEY `fendpoint` (`endpoint`),
@@ -504,7 +511,7 @@ CREATE TABLE `structure` (
   `structure` blob NOT NULL,
   `format` enum('SDF','CML','MOL','INC','NANO','PDB','CIF') COLLATE utf8_bin NOT NULL DEFAULT 'SDF',
   `updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `user_name` varchar(16) COLLATE utf8_bin DEFAULT NULL,
+  `user_name` varchar(32) COLLATE utf8_bin DEFAULT NULL,
   `type_structure` enum('NA','MARKUSH','SMILES','2D no H','2D with H','3D no H','3D with H','optimized','experimental','NANO') COLLATE utf8_bin NOT NULL DEFAULT 'NA',
   `label` enum('OK','UNKNOWN','ERROR') COLLATE utf8_bin NOT NULL DEFAULT 'UNKNOWN' COMMENT 'quality label',
   `atomproperties` blob,
@@ -540,14 +547,6 @@ CREATE TABLE `ontobucket` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 
--- DELIMITER $
--- CREATE TRIGGER copy_history BEFORE UPDATE ON structure
--- FOR EACH ROW BEGIN
---   INSERT INTO history (idstructure,structure,format,updated,user_name,type_structure,label)
---        SELECT idstructure,structure,format,updated,user_name,type_structure,label FROM structure
---        WHERE structure.idstructure = OLD.idstructure;
---  END $
--- DELIMITER ;
 
 -- -----------------------------------------------------
 -- Procedure to move structures from one chemical to another
@@ -698,7 +697,7 @@ CREATE TABLE  `models` (
   `hidden` tinyint(1) NOT NULL DEFAULT '0',
   `creator` varchar(45) COLLATE utf8_bin NOT NULL DEFAULT 'guest',
   `dataset` varchar(255) COLLATE utf8_bin DEFAULT NULL COMMENT 'dataset uri',
-  `user_name` varchar(16) COLLATE utf8_bin NOT NULL DEFAULT 'guest',
+  `user_name` varchar(32) COLLATE utf8_bin NOT NULL DEFAULT 'guest',
   `stars` int(10) unsigned NOT NULL DEFAULT '5' COMMENT 'stars rating',
   PRIMARY KEY (`idmodel`),
   UNIQUE KEY `Index_5` (`name`) USING BTREE,
@@ -742,7 +741,7 @@ CREATE TABLE `property_values` (
   `idproperty` int(10) unsigned NOT NULL,
   `idstructure` int(10) unsigned NOT NULL,
   `idchemical` int(10) unsigned NOT NULL,
-  `user_name` varchar(16) COLLATE utf8_bin NOT NULL,
+  `user_name` varchar(32) COLLATE utf8_bin NOT NULL,
   `status` enum('OK','UNKNOWN','ERROR','TRUNCATED') COLLATE utf8_bin NOT NULL DEFAULT 'UNKNOWN',
   `text` text COLLATE utf8_bin,
   `idvalue_string` int(10) unsigned DEFAULT NULL,
@@ -771,7 +770,7 @@ CREATE TABLE  `property_pairstruc` (
   `idstructure1` int(10) unsigned NOT NULL auto_increment COMMENT 'First structure id',
   `idstructure2` int(10) unsigned NOT NULL COMMENT 'Second structure id',
   `idproperty` int(10) unsigned NOT NULL COMMENT 'Property id',
-  `user_name` varchar(16) collate utf8_bin NOT NULL COMMENT 'User',
+  `user_name` varchar(32) collate utf8_bin NOT NULL COMMENT 'User',
   `status` enum('OK','UNKNOWN','ERROR','TRUNCATED') collate utf8_bin NOT NULL,
   `text` text collate utf8_bin COMMENT 'Text value, if longer than allowed by property_string',
   `idvalue_string` int(10) unsigned NOT NULL COMMENT 'link to property_string',
@@ -876,7 +875,7 @@ CREATE TABLE  `quality_pair` (
   `idchemical` int(10) unsigned NOT NULL auto_increment,
   `idstructure` int(10) unsigned NOT NULL,
   `rel` int(10) unsigned NOT NULL default '0' COMMENT 'number of same structures',
-  `user_name` varchar(16) collate utf8_bin NOT NULL,
+  `user_name` varchar(32) collate utf8_bin NOT NULL,
   `updated` timestamp NOT NULL default CURRENT_TIMESTAMP,
   `TEXT` text collate utf8_bin,
   PRIMARY KEY  (`idchemical`,`idstructure`),
@@ -908,7 +907,7 @@ CREATE TABLE  `quality_chemicals` (
 DROP TABLE IF EXISTS `quality_structure`;
 CREATE TABLE  `quality_structure` (
   `idstructure` int(10) unsigned NOT NULL,
-  `user_name` varchar(16) collate utf8_bin NOT NULL,
+  `user_name` varchar(32) collate utf8_bin NOT NULL,
   `label` enum('OK','ProbablyOK','Unknown','ProbablyERROR','ERROR') collate utf8_bin NOT NULL default 'Unknown',
   `text` text collate utf8_bin,
   `updated` timestamp NOT NULL default CURRENT_TIMESTAMP,
@@ -939,7 +938,7 @@ DROP TABLE IF EXISTS `src_dataset`;
 CREATE TABLE  `src_dataset` (
   `id_srcdataset` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT 'default',
-  `user_name` varchar(16) COLLATE utf8_bin DEFAULT NULL,
+  `user_name` varchar(32) COLLATE utf8_bin DEFAULT NULL,
   `idreference` int(11) unsigned NOT NULL,
   `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `idtemplate` int(10) unsigned DEFAULT NULL,
@@ -958,6 +957,36 @@ CREATE TABLE  `src_dataset` (
   CONSTRAINT `FK_src_dataset_3` FOREIGN KEY (`idtemplate`) REFERENCES `template` (`idtemplate`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
+-- -----------------------------------------------------
+-- Table `assay_template` 
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `assay_template`;
+CREATE TABLE `assay_template` (
+  `endpoint` varchar(64) DEFAULT NULL,
+  `assay` varchar(45) DEFAULT NULL,
+  `row` int(11) DEFAULT NULL,
+  `col` int(11) DEFAULT NULL,
+  `idtemplate` varchar(45) DEFAULT NULL,
+  `module` varchar(16) DEFAULT NULL,
+  `level1` varchar(32) DEFAULT NULL,
+  `level2` varchar(32) DEFAULT NULL,
+  `level3` varchar(32) DEFAULT NULL,
+  `value` varchar(192) DEFAULT NULL,
+  `value_clean` varchar(192) DEFAULT NULL,
+  `header1` varchar(80) DEFAULT NULL,
+  `hint` text,
+  `unit` varchar(32) DEFAULT NULL,
+  `annotation` varchar(64) DEFAULT NULL,
+  `file` varchar(32) DEFAULT NULL,
+  `folder` varchar(32) DEFAULT NULL,
+  `sheet` varchar(32) DEFAULT NULL,
+  `visible` tinyint(4) DEFAULT '1',
+  KEY `primary_index` (`idtemplate`,`row`,`col`),
+  KEY `endpointx` (`endpoint`,`assay`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
 -- ------------------------------------------------------------------------------------------
 -- Triggers to duplicate info of properties used in a dataset via template/template_def table
 -- ------------------------------------------------------------------------------------------
@@ -966,6 +995,7 @@ DELIMITER $
 -- -----------------------------------------------------
 -- Trigger to create template entry for a dataset
 -- -----------------------------------------------------
+DROP TRIGGER IF EXISTS insert_dataset_template$
 CREATE DEFINER = CURRENT_USER TRIGGER insert_dataset_template BEFORE INSERT ON src_dataset
  FOR EACH ROW BEGIN
     INSERT IGNORE INTO template (name) values (NEW.name);
@@ -997,7 +1027,7 @@ CREATE TABLE IF NOT EXISTS  `struc_dataset` (
 DROP TABLE IF EXISTS `sessions`;
 CREATE TABLE  `sessions` (
   `idsessions` int(10) unsigned NOT NULL auto_increment,
-  `user_name` varchar(16) collate utf8_bin NOT NULL,
+  `user_name` varchar(32) collate utf8_bin NOT NULL,
   `started` timestamp NOT NULL default CURRENT_TIMESTAMP,
   `completed` timestamp NOT NULL DEFAULT '2010-01-01 01:01:01',
   `title` varchar(45) collate utf8_bin NOT NULL default 'temp',
@@ -1054,7 +1084,7 @@ CREATE TABLE  `funcgroups` (
   `idfuncgroup` int(10) unsigned NOT NULL,
   `name` varchar(45) collate utf8_bin NOT NULL,
   `smarts` blob NOT NULL,
-  `user_name` varchar(16) collate utf8_bin default NULL,
+  `user_name` varchar(32) collate utf8_bin default NULL,
   PRIMARY KEY  (`idfuncgroup`),
   UNIQUE KEY `Index_2` (`name`),
   KEY `FK_funcgroups_1` (`user_name`)
@@ -1481,6 +1511,8 @@ DELIMITER $
  END $
 DELIMITER ;
 
+
+
 -- -----------------------------------------------------
 -- Table `version` Version
 -- -----------------------------------------------------
@@ -1492,7 +1524,7 @@ CREATE TABLE  `version` (
   `comment` varchar(45),
   PRIMARY KEY  (`idmajor`,`idminor`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-insert into version (idmajor,idminor,comment) values (9,2,"AMBIT2 schema");
+insert into version (idmajor,idminor,comment) values (10,6,"AMBIT2 schema");
 
 -- -----------------------------------------------------
 -- Sorts comma separated strings
@@ -2861,7 +2893,7 @@ BEGIN
    -- assign rank		  
    SET @rownum := 0;
    insert into qsasmap4 
-       (SELECT idsasmap,idchemical,a,b,c,d,fisher,g2,(@rownum := @rownum + 1) AS rank FROM qsasmap4 WHERE idsasmap=@idsasmap ORDER BY g2 DESC
+       (SELECT idsasmap,idchemical,a,b,c,d,fisher,g2,(@rownum := @rownum + 1) AS `rank` FROM qsasmap4 WHERE idsasmap=@idsasmap ORDER BY g2 DESC
         ) on duplicate key  update  g2rank=values(g2rank);
           		  
    -- return sasmap id

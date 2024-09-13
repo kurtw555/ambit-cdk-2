@@ -144,6 +144,24 @@ public enum ParticleTypes {
 			return "936-414-1";
 		}
 	},
+	ENM_9000005 {
+		// Aluminium oxide
+		@Override
+		public String getSMILES() {
+			return "[Al+3].[Al+3].[O-2].[O-2].[O-2]";
+		}
+
+		@Override
+		public String getCAS() {
+			return "1344-28-1";
+		}
+
+		@Override
+		public String getFormula() {
+			return "Al2O3";
+		}
+		
+	},
 	ENM_9000006 {
 		// CeO2
 		@Override
@@ -275,6 +293,26 @@ public enum ParticleTypes {
 		}
 	
 	},
+	CHEBI_51050 {
+		// TiO2
+		@Override
+		public String getSMILES() {
+			return "O=[Ti]=O";
+		}
+
+		@Override
+		public String getFormula() {
+			return "TiO2";
+		}
+		@Override
+		public STRUCTURE_RELATION getDefaultRole() {
+			return STRUCTURE_RELATION.HAS_CORE;
+		}
+		@Override
+		public String getName() {
+			return "Titanium dioxide nanoparticle";
+		}		
+	},
 	NPO_1486 {
 		// TiO2
 		@Override
@@ -399,7 +437,7 @@ public enum ParticleTypes {
 			return "1306-24-7";
 		}
 	},
-	NPO_ZrO2 {
+	ENM_9000241 {
 		@Override
 		public String getSMILES() {
 			return "O=[Zr]=O";
@@ -952,10 +990,10 @@ public enum ParticleTypes {
 			return "Glass wool";
 		}
 	},
-	Alloy {
+	CHEBI_142648 {
 		@Override
 		public String toString() {
-			return name();
+			return "Alloy";
 		}
 	};
 	public String getName() {

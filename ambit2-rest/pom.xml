@@ -5,7 +5,7 @@
 	<parent>
 		<artifactId>ambit2-all</artifactId>
 		<groupId>ambit</groupId>
-		<version>3.3.0-SNAPSHOT</version>
+		<version>4.1.0-SNAPSHOT</version>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>ambit2-rest</artifactId>
@@ -129,7 +129,7 @@
 		<repository>
 			<id>maven-restlet</id>
 			<name>Public online Restlet repository</name>
-			<url>http://maven.restlet.com</url>
+			<url>https://maven.restlet.talend.com</url>
 		</repository>
 	</repositories>
 	<build>
@@ -145,7 +145,19 @@
 				</plugin>
 			</plugins>
 		</pluginManagement>
-	</build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>test-jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>	</build>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<restlet.version>2.0-M6</restlet.version>

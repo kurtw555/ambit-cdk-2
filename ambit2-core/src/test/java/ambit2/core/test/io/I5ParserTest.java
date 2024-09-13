@@ -55,27 +55,7 @@ public class I5ParserTest {
 			public void handleError(String message, int row, int colStart, int colEnd,
 					Exception exception) {
 			}
-
-			@Override
-			public void handleFatalError(String s) {
-				
-			}
-
-			@Override
-			public void handleFatalError(String s, Exception e) {
-
-			}
-
-			@Override
-			public void handleFatalError(String s, int i, int i1, int i2) {
-
-			}
-
-			@Override
-			public void handleFatalError(String s, int i, int i1, int i2, Exception e) {
-
-			}
-
+			
 			@Override
 			public void handleError(String message, int row, int colStart, int colEnd) {
 			}

@@ -1,18 +1,26 @@
 package ambit2.groupcontribution.dataset;
 
-import java.util.HashMap;
+
 import java.util.Map;
-
 import org.openscience.cdk.interfaces.IAtomContainer;
-
 import ambit2.groupcontribution.fragmentation.Fragmentation;
 
 public class DataSetObject 
 {
-	public IAtomContainer molecule = null;
-	//public Map<String, Object> externalProperties = new HashMap<String, Object>();
+	public IAtomContainer molecule = null;	
 	public Fragmentation fragmentation = null;
+	public Map<Object, double[]> localDescriptors = null;
+	public Map<Object, Double> targetLocalProperty = null;
+	public Map<Object, double[]> externalLocalProperties = null;
+	public String molNotation = null;
+	public String error = null;
 	
+	public DataSetObject() {		
+	}
+	
+	public DataSetObject(IAtomContainer molecule) {
+		this.molecule = molecule;
+	}
 	
 	public Double getPropertyDoubleValue(String property)
 	{

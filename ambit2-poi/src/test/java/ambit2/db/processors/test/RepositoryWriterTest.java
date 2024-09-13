@@ -57,6 +57,8 @@ import ambit2.db.processors.RepositoryWriter;
 
 public class RepositoryWriterTest extends DbUnitTest {
 
+    @Deprecated 
+  //TODO change to use with nmdataparser
 	@Test
 	public void testWriteBCFFormat() throws Exception {
 
@@ -111,18 +113,18 @@ public class RepositoryWriterTest extends DbUnitTest {
 		property = c.createQueryTable("EXPECTED",
 				"SELECT * FROM catalog_references");
 		Assert.assertEquals(17, property.getRowCount());
-
+		int n=36; //was 37
 		property = c
 				.createQueryTable("EXPECTED",
 						"SELECT name,count(idreference) as c FROM properties  group by name");
-		int n=36;
 		Assert.assertEquals(n, property.getRowCount());
 		for (int i = 0; i < n; i++) {
 			Assert.assertEquals(new BigInteger("14"), property.getValue(i, "c"));
 		}
 
 		property = c.createQueryTable("EXPECTED", "SELECT * FROM properties");
-		Assert.assertEquals(n*14, property.getRowCount());
+		//was 518
+		Assert.assertEquals(504, property.getRowCount());
 		property_values = c.createQueryTable("EXPECTED",
 				"SELECT * FROM property_values");
 		Assert.assertEquals(28 * n, property_values.getRowCount());
@@ -130,7 +132,7 @@ public class RepositoryWriterTest extends DbUnitTest {
 				.createQueryTable(
 						"EXPECTED",
 						"SELECT * FROM src_dataset join template_def using(idtemplate) where name='TEST INPUT'");
-		Assert.assertEquals(n*14, srcdataset.getRowCount());
+		Assert.assertEquals(504, srcdataset.getRowCount());
 		c.close();
 		/**
 		 * Removing redundant properties insert ignore into property_values

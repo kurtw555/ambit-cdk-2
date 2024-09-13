@@ -31,13 +31,11 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import org.openscience.cdk.tools.ILoggingTool;
+import org.openscience.cdk.tools.LoggingTool;
 
 public class SDFBrokenLineTerminationConverter  {
-	static Logger logger = Logger.getLogger(SDFBrokenLineTerminationConverter.class.getName());
+	static LoggingTool logger = new LoggingTool(SDFBrokenLineTerminationConverter.class);
 	/**
 	 *  In Java, a line is considered terminated by any one of the following: a line feed \n, a carriage return \r, or a carriage return followed immediately by a line feed. 
 	 *

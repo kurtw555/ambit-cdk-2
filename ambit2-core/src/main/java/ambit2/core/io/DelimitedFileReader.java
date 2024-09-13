@@ -29,8 +29,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.openscience.cdk.exception.CDKException;
 import org.openscience.cdk.interfaces.IAtomContainer;
@@ -45,7 +43,7 @@ import org.openscience.cdk.io.formats.IResourceFormat;
 import org.openscience.cdk.io.setting.IOSetting;
 import org.openscience.cdk.silent.AtomContainerSet;
 import org.openscience.cdk.silent.SilentChemObjectBuilder;
-import org.openscience.cdk.tools.ILoggingTool;
+import org.openscience.cdk.tools.LoggingTool;
 
 import ambit2.core.data.MoleculeTools;
 
@@ -58,15 +56,15 @@ public class DelimitedFileReader extends DefaultChemObjectReader implements
 		IChemObjectReader {
 	protected DelimitedFileFormat format;
 	private BufferedReader input = null;
-	//private static LoggingTool logger = new LoggingTool(
-	//		DelimitedFileReader.class);
-	private static Logger logger = Logger.getLogger(DelimitedFileReader.class.getName());
+	private static LoggingTool logger = new LoggingTool(
+			DelimitedFileReader.class);
+
 	/**
 	 * Default delimited file format - CSV
 	 */
 	// TODO make use of IOSettings to recognise fields in the header
 	public DelimitedFileReader(Reader input, DelimitedFileFormat format) {
-		logger = Logger.getLogger(DelimitedFileReader.class.getName());
+		logger = new LoggingTool(this);
 		this.input = new BufferedReader(input);
 		this.format = format;
 	}
@@ -126,8 +124,7 @@ public class DelimitedFileReader extends DefaultChemObjectReader implements
 			reader.close();
 			return som;
 		} catch (Exception x) {
-			logger.log(Level.WARNING, x.getMessage(), x);
-			//logger.error(x);
+			logger.error(x);
 			return null;
 		}
 

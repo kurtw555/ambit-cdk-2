@@ -11,59 +11,12 @@ import ambit2.base.interfaces.IStructureRecord;
 import ambit2.base.relation.composition.CompositionRelation;
 import ambit2.base.relation.composition.Proportion;
 import ambit2.sln.SLNContainer;
-import ambit2.sln.SLNContainerSet;
+import ambit2.sln.SLNSubstance;
 import ambit2.smarts.SmartsHelper;
 
 public class SLN2Substance 
 {
-	//Conversion flags 
-	public boolean FlagProportion = true;
-	public boolean FlagCompositionUUID = true;
-	public boolean FlagSmiles = true;
-	public boolean FlagInchi = true;
-	public boolean FlagInchiKey = true;
-	public boolean FlagRelation = true;
-	public boolean FlagContent = true;
-	public boolean FlagProperties = true;
-	public boolean FlagStrType = true;
-	public boolean FlagFacets = true;
-	public boolean FlagRelationMetric = true;
-	public boolean FlagRelationType = true;
-	/*
-	public boolean FlagReference = false;
-	public boolean FlagSelected = false;
-	public boolean FlagDataEntryID = false;
-	public boolean FlagId_srcdataset = false;
-	public boolean FlagIdchemical = false;
-	public boolean FlagIdstructure = false;
-	*/
-	
-	
-	//Conversion attribute names for CompositionRelation fields
-	public String proportion_SLNAttr = "proportion";
-	public String compositionUUID_SLNAttr = "compositionUUID";
-	public String name_SLNAttr = "name";
-	public String relationMetric_SLNAttr = "proportion";  //the field name in class CompositionRelation is "relation"
-	public String relationType_SLNAttr = "role";
-	
-	//Conversion attribute names for Structure Record fields
-	public String inchiKey_SLNAttr = "inchiKey";
-	public String formula_SLNAttr = "formula";
-	public String idchemical_SLNAttr = "idchemical";
-	public String idstructure_SNLAttr = "idstricture";
-	public String content_SNLAttr = "content";
-	public String format_SLNAttr = "format";
-	public String reference_SLNAttr = "reference";
-	public String properties_SLNAttr = "properties";
-	public String type_SLNAttr = "type";
-	/*
-	public String selected_SLNAttr = "selected";
-	public String facets_SLNAttr = "facets";
-	public String dataEntryID_SLNAttr = "dataEntryID";
-	public String id_srcdataset_SLNAttr = "id_srcdataset";
-	*/
-	
-	public boolean FlagAddImplicitHAtomsOnSLNAtomConversion = false;
+	public SLN2SubstanceConfig config = new SLN2SubstanceConfig();
 	
 	private List<String> conversionErrors = new ArrayList<String>();
 	private List<String> conversionWarnings = new ArrayList<String>();
@@ -92,15 +45,15 @@ public class SLN2Substance
 	}
 	
 	
-	public List<CompositionRelation> slnToSubstanceComposition(SLNContainerSet slnContSet)
+	public List<CompositionRelation> slnToSubstanceComposition(SLNSubstance slnSubst)
 	{
-		if (slnContSet == null)
+		if (slnSubst == null)
 			return null;
 		
 		List<CompositionRelation> composition = new ArrayList<CompositionRelation>();
-		for (int i = 0; i < slnContSet.containers.size(); i++)
+		for (int i = 0; i < slnSubst.containers.size(); i++)
 		{
-			SLNContainer slnContainer = slnContSet.containers.get(i);
+			SLNContainer slnContainer = slnSubst.containers.get(i);
 			CompositionRelation compRel = slnContainerToCompositionRelation(slnContainer);
 			composition.add(compRel);
 		}
@@ -108,16 +61,16 @@ public class SLN2Substance
 		return composition;
 	}
 	
-	public SLNContainerSet substanceCompositionToSln(List<CompositionRelation> composition)
+	public SLNSubstance substanceCompositionToSln(List<CompositionRelation> composition)
 	{
-		SLNContainerSet slnContSet = new SLNContainerSet();
+		SLNSubstance slnSubst = new SLNSubstance();
 		for (int i = 0; i < composition.size(); i++)
 		{
 			CompositionRelation compRel = composition.get(i);
 			SLNContainer slnContainer = compositionRelationToSLNContainer(compRel);
-			slnContSet.containers.add(slnContainer);
+			slnSubst.containers.add(slnContainer);
 		}
-		return slnContSet;
+		return slnSubst;
 	}
 	
 	
@@ -126,16 +79,16 @@ public class SLN2Substance
 		IStructureRecord structure = slnContainerToStructureRecord(slnContainer);
 		CompositionRelation compRel = new CompositionRelation(null, structure, null, null);
 		
-		if (FlagCompositionUUID)
+		if (config.conversion.compositionUUID)
 		{
-			String attr = slnContainer.getAttributes().userDefiendAttr.get(compositionUUID_SLNAttr);
+			String attr = slnContainer.getAttributes().userDefiendAttr.get(config.compositionUUID_SLNAttr);
 			if (attr != null)
 				compRel.setCompositionUUID(attr);
 		}
 		
-		if (FlagRelationMetric)
+		if (config.conversion.relationMetric)
 		{
-			String attr = slnContainer.getAttributes().userDefiendAttr.get(relationMetric_SLNAttr);
+			String attr = slnContainer.getAttributes().userDefiendAttr.get(config.relationMetric_SLNAttr);
 			if (attr != null)
 			{
 				try
@@ -162,14 +115,14 @@ public class SLN2Substance
 		else
 			container = new SLNContainer(SilentChemObjectBuilder.getInstance());
 		
-		if (FlagCompositionUUID)
+		if (config.conversion.compositionUUID)
 		{
 			String attr = compRel.getCompositionUUID();
 			if (attr != null)
-				container.getAttributes().userDefiendAttr.put(compositionUUID_SLNAttr, attr);
+				container.getAttributes().userDefiendAttr.put(config.compositionUUID_SLNAttr, attr);
 		}
 		
-		if (FlagRelationMetric)
+		if (config.conversion.relationMetric)
 		{
 			Proportion prop = compRel.getRelation();
 			if (prop != null)
@@ -178,7 +131,7 @@ public class SLN2Substance
 				{
 					String attr = SLNIOHelpers.proportionToString(prop);
 					if (attr != null)
-						container.getAttributes().userDefiendAttr.put(relationMetric_SLNAttr, attr);
+						container.getAttributes().userDefiendAttr.put(config.relationMetric_SLNAttr, attr);
 				}
 				catch (Exception e)	
 				{
@@ -198,7 +151,7 @@ public class SLN2Substance
 		
 		IAtomContainer container = sln2ChemObject.slnContainerToAtomContainer(slnContainer);
 		try{
-			SmartsHelper.preProcessStructure(container, true, FlagAddImplicitHAtomsOnSLNAtomConversion);
+			SmartsHelper.preProcessStructure(container, true, config.FlagAddImplicitHAtomsOnSLNAtomConversion);
 		}
 		catch(Exception e)
 		{
@@ -208,7 +161,7 @@ public class SLN2Substance
 		conversionWarnings.addAll(sln2ChemObject.getConversionWarnings());
 		
 		IStructureRecord structure = new StructureRecord();
-		if (FlagSmiles)
+		if (config.conversion.smiles)
 		{
 			try{
 				String smiles = SmartsHelper.moleculeToSMILES(container, true);

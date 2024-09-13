@@ -18,11 +18,17 @@ import ambit2.smarts.CMLUtilities;
 public class SLNAtomExpression 
 {
 	public int atomID = -1;
+	public int valences[] = null; //used for macro and markush atoms
+	
 	public ArrayList<SLNExpressionToken> tokens = new ArrayList<SLNExpressionToken>(); 
 	//TODO handle brackets within expression
 
 	public boolean matches(IAtom atom) 
 	{	
+		//Empty token list is used for SLNLogicalExpression encapsulating only an atom ID
+		if (tokens.isEmpty())
+			return true;  
+		
 		SLNLogicalExpression sle = new SLNLogicalExpression();
 		for (int i = 0; i< tokens.size(); i++)
 		{
@@ -146,17 +152,14 @@ public class SLNAtomExpression
 				return(false);
 
 		case SLNConst.QA_ATTR_hac:  
-			if (tok.param == atom.getFormalNeighbourCount())
+			//if (tok.param == atom.getFormalNeighbourCount())
+			if(SLNConst.compare(atom.getFormalNeighbourCount(), tok.param, tok.comparisonOperation))	
 				return(true);
 			else	
 				return(false);
 
 		case SLNConst.QA_ATTR_hc:
 		{	
-			/*
-        	https://sourceforge.net/tracker/?func=detail&aid=3020065&group_id=20024&atid=120024
-			Integer hci = atom.getHydrogenCount();
-			 */
 			Integer hci = atom.getImplicitHydrogenCount();
 			int totalH = 0;
 			if (hci != null)
@@ -165,7 +168,9 @@ public class SLNAtomExpression
 			Integer explicitH = (Integer)atom.getProperty(CMLUtilities.ExplicitH);
 			if (explicitH != null)
 				totalH+=explicitH.intValue();
-			if (tok.param == totalH)
+			
+			//if (tok.param == totalH)
+			if(SLNConst.compare(totalH, tok.param, tok.comparisonOperation))
 				return(true);
 			else	
 				return(false);	
@@ -187,7 +192,10 @@ public class SLNAtomExpression
 			if (atom.getSymbol().equals('C'))
 				totalC++;
 			
-			if (tok.param == (atom.getFormalNeighbourCount() -(totalC + totalH)))
+			int heteroAtomCount = atom.getFormalNeighbourCount() -(totalC + totalH);
+			
+			//if (tok.param == (atom.getFormalNeighbourCount() -(totalC + totalH)))
+			if(SLNConst.compare(heteroAtomCount, tok.param, tok.comparisonOperation))	
 				return(true);
 			else	
 				return(false);
@@ -195,14 +203,16 @@ public class SLNAtomExpression
 		
 		case SLNConst.QA_ATTR_ntc:
 			//TODO number of nonterminal atoms
+			return false;
 
-		case SLNConst.QA_ATTR_rbc:    		 
+		case SLNConst.QA_ATTR_rbc:  
+			//TODO improve: use comparison operation
 			int atomRings1[] = (int[])atom.getProperty(CMLUtilities.RingData);
 			return(match_rbc(atomRings1, tok.param, atom));
 
 		case SLNConst.QA_ATTR_src:    		 
 			int atomRings2[] = (int[])atom.getProperty(CMLUtilities.RingData);    		
-			return(match_src(atomRings2, tok.param, atom));	
+			return(match_src(atomRings2, tok.param, tok.comparisonOperation, atom));	
 
 		case SLNConst.QA_ATTR_tbo:
 			if (tok.param == atom.getValency())
@@ -217,17 +227,33 @@ public class SLNAtomExpression
 			if (hci != null)
 				hc = hci.intValue();
 
-			if (tok.param == atom.getFormalNeighbourCount()  + hc)
+			//if (tok.param == atom.getFormalNeighbourCount()  + hc)
+			if(SLNConst.compare(atom.getFormalNeighbourCount()  + hc, tok.param, tok.comparisonOperation))
 				return(true);
 			else	
 				return(false);	
-		}	   		
+		}
+		
+		case SLNConst.QA_ATTR_type:
+		{
+			Integer atNum = atom.getAtomicNumber();
+			int a_num = 0;
+			if (atNum != null)
+				a_num = atNum.intValue();
+			
+			if (SLNConst.compare(a_num, tok.param, tok.comparisonOperation))
+				return(true);
+			else
+				return(false);
+		}
+		
 		}
 		return true; //by default
 	}
 
 	public boolean match_rbc(int atomRings[], int param,  IAtom atom)
 	{
+		
 		if (atomRings == null)
 		{
 			if (param == 0)
@@ -246,7 +272,12 @@ public class SLNAtomExpression
 			}
 			else
 			{
-				if (param == atomRings.length)
+				//TODO to improve the rbc determination
+				//This is not correct for spiro atoms: atomRings.length = 2 but rbc = 4;
+				
+				int rbc = atomRings.length + 1;
+					
+				if (param == rbc)
 					return(true);
 				else
 					return(false);
@@ -254,34 +285,16 @@ public class SLNAtomExpression
 		}
 	}
 
-	public boolean match_src(int atomRings[], int param,  IAtom atom)
+	public boolean match_src(int atomRings[], int param, int comparisonOperation, IAtom atom)
 	{
-		if (atomRings == null)
-		{
-			if (param == 0)
-				return(true);
-			else
-				return(false);
-		}
+		int src = 0;
+		if (atomRings != null)
+			src = atomRings.length;
+		
+		if (SLNConst.compare(src, param, comparisonOperation))
+			return(true);
 		else
-		{
-			if (param < 3) // value 1 is possible here 
-			{
-				if (atomRings.length > 0)
-					return(true);
-				else
-					return(false);
-			}
-			else
-			{
-				for (int i = 0; i < atomRings.length; i++)
-				{
-					if (atomRings[i] == param)
-						return(true);
-				}
-				return(false);
-			}
-		}
+			return(false);
 	}
 	
 	boolean match_stereo(int param, int targetStereo)
@@ -330,15 +343,41 @@ public class SLNAtomExpression
 	{
 		StringBuffer sb = new StringBuffer();
 		sb.append("[");
+		
 		if (atomID >= 0)
 		{	
 			sb.append(atomID);
 			if (!tokens.isEmpty())
 				sb.append(":");
 		}
+		
+		//expression tokens
 		for (int i=0; i < tokens.size(); i++)
 			sb.append(tokens.get(i).toString(true));
+		
+		//valences
+		if (valences != null)
+		{	
+			sb.append("v=");
+			for (int i = 0; i < valences.length; i++)
+			{	
+				if (i > 0)
+					sb.append(",");
+				sb.append(valences[i]);
+			}	
+		}
+		
 		sb.append("]");
 		return sb.toString();
+	}
+	
+	public SLNAtomExpression clone() {
+		SLNAtomExpression atExp = new SLNAtomExpression();
+		atExp.atomID = atomID;
+		atExp.valences = valences; //TODO clone valences fully
+		
+		for (int i = 0; i < tokens.size(); i++)
+			atExp.tokens.add(tokens.get(i).clone()); 
+		return atExp;
 	}
 }

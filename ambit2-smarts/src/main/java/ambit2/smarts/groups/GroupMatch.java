@@ -7,25 +7,30 @@ import org.openscience.cdk.interfaces.IAtom;
 import org.openscience.cdk.interfaces.IAtomContainer;
 import org.openscience.cdk.isomorphism.matchers.IQueryAtomContainer;
 
+import ambit2.base.exceptions.EmptyMoleculeException;
 import ambit2.smarts.IsomorphismTester;
 import ambit2.smarts.QuerySequenceElement;
 import ambit2.smarts.SmartsAtomExpression;
+import ambit2.smarts.SmartsConst;
 import ambit2.smarts.SmartsFlags;
 import ambit2.smarts.SmartsParser;
+import ambit2.smarts.SmartsConst.SSM_MODE;
 
 public class GroupMatch 
 {
-	IsomorphismTester isoTester = null;
-	SmartsParser parser = null;
-	String smarts = null;
-	IQueryAtomContainer smartsQuery = null;
-	List<QuerySequenceElement> sequence = null;
-	List<SmartsAtomExpression> recursiveAtoms = null;
-	String error = null;
+	private IsomorphismTester isoTester = null;
+	private SmartsParser parser = null;
+	private String smarts = null;
+	private IQueryAtomContainer smartsQuery = null;
+	private List<QuerySequenceElement> sequence = null;
+	private List<SmartsAtomExpression> recursiveAtoms = null;
+	private String error = "";
 	
-	SmartsFlags flags = new SmartsFlags();
+	private SmartsFlags flags = new SmartsFlags();
+	private SSM_MODE FlagSSMode = SmartsConst.SSM_MODE.SSM_NON_IDENTICAL;
+	private boolean FlagPrepareTarget = true;
 	
-	public GroupMatch(String smarts, SmartsParser parser, IsomorphismTester isoTester)
+	public GroupMatch(String smarts, SmartsParser parser, IsomorphismTester isoTester) throws EmptyMoleculeException
 	{
 		this.smarts = smarts;
 		this.parser = parser;
@@ -33,7 +38,7 @@ public class GroupMatch
 		configure();
 	}
 	
-	public void configure()
+	public void configure()  throws EmptyMoleculeException
 	{
 		smartsQuery = parser.parse(smarts);
 		
@@ -73,9 +78,10 @@ public class GroupMatch
 	}
 	
 	
-	public boolean match(IAtomContainer target)
+	public boolean match(IAtomContainer target) throws EmptyMoleculeException
 	{	
-		SmartsParser.prepareTargetForSMARTSSearch(flags, target);
+		if (FlagPrepareTarget)
+			SmartsParser.prepareTargetForSMARTSSearch(flags, target);
     	
 		if (flags.hasRecursiveSmarts)
 			 mapRecursiveAtomsAgainstTarget(recursiveAtoms, target);
@@ -84,7 +90,60 @@ public class GroupMatch
 		return isoTester.hasIsomorphism(target);
 	}
 	
-	public void mapRecursiveAtomsAgainstTarget(List<SmartsAtomExpression> recursiveAtoms, IAtomContainer target) {
+	public boolean matchAtPosition(IAtomContainer target, int atomNum) throws EmptyMoleculeException
+	{
+		if (FlagPrepareTarget)
+			SmartsParser.prepareTargetForSMARTSSearch(flags, target);
+    	
+		if (flags.hasRecursiveSmarts)
+			 mapRecursiveAtomsAgainstTarget(recursiveAtoms, target);
+		
+		isoTester.setSequence(smartsQuery, sequence);
+		return isoTester.checkIsomorphismAtPosition(target, atomNum);
+	}
+		
+	public List<List<IAtom>> getMappings(IAtomContainer target) throws EmptyMoleculeException
+	{
+		if (FlagPrepareTarget)
+			SmartsParser.prepareTargetForSMARTSSearch(flags, target);
+    	
+		if (flags.hasRecursiveSmarts)
+			 mapRecursiveAtomsAgainstTarget(recursiveAtoms, target);
+		
+		isoTester.setSequence(smartsQuery, sequence);
+		
+		if (FlagSSMode == SmartsConst.SSM_MODE.SSM_NON_IDENTICAL) 
+    	{
+			List<List<IAtom>> maps = isoTester.getNonIdenticalMappings(target);
+    		return maps;
+    	}
+		
+		if (FlagSSMode == SmartsConst.SSM_MODE.SSM_NON_OVERLAPPING) 
+    	{
+			List<List<IAtom>> maps = isoTester.getNonOverlappingMappings(target);
+    		return maps;
+    	}
+		
+		if (FlagSSMode == SmartsConst.SSM_MODE.SSM_ALL) 
+    	{
+			List<List<IAtom>> maps = isoTester.getAllIsomorphismMappings(target);
+    		return maps;
+    	}
+		
+		return null;
+	}
+	
+	
+	public int matchCount(IAtomContainer target) throws EmptyMoleculeException
+	{
+		List<List<IAtom>> maps = getMappings(target);
+		if (maps == null)
+			return 0;
+		else
+			return maps.size();
+	}
+	
+	public void mapRecursiveAtomsAgainstTarget(List<SmartsAtomExpression> recursiveAtoms, IAtomContainer target)  throws EmptyMoleculeException {
 		// Reset for new mapping
 		for (int i = 0; i < recursiveAtoms.size(); i++)
 			recursiveAtoms.get(i).recSmartsMatches = new ArrayList<List<IAtom>>();
@@ -105,7 +164,43 @@ public class GroupMatch
 			}
 		}
 	}
+		
+	public SSM_MODE getFlagSSMode() {
+		return FlagSSMode;
+	}
+
+	public void setFlagSSMode(SSM_MODE flagSSMode) {
+		FlagSSMode = flagSSMode;
+	}	
 	
+	public boolean isFlagPrepareTarget() {
+		return FlagPrepareTarget;
+	}
+
+	public void setFlagPrepareTarget(boolean flagPrepareTarget) {
+		FlagPrepareTarget = flagPrepareTarget;
+	}
+
+	public IsomorphismTester getIsoTester() {
+		return isoTester;
+	}
+
+	public SmartsParser getParser() {
+		return parser;
+	}
+
+	public String getSmarts() {
+		return smarts;
+	}
+
+	public IQueryAtomContainer getSmartsQuery() {
+		return smartsQuery;
+	}
+
+	public List<QuerySequenceElement> getSequence() {
+		return sequence;
+	}
+
 	public String getError()
 	{
 		return error;

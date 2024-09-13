@@ -18,7 +18,9 @@ import ambit2.groupcontribution.groups.IGroup;
 
 public class Calculator 
 {
-	
+	/*
+	 * Currently not used. It calculated directly from GroupContributionModel object
+	 * 
 	public static double calcModelFor(IAtomContainer mol, GroupContributionModel model)
 	{
 		double modelValue = 0.0;
@@ -30,17 +32,19 @@ public class Calculator
 		for (Map.Entry<String,Integer> entry : groups.entrySet())
 		{
 			String grpDes = entry.getKey();
-			if (modelGroups.containsKey(grpDes));
+			System.out.println("-->" + grpDes);
+			if (modelGroups.containsKey(grpDes))
 				modelValue += modelGroups.get(grpDes).getContribution() * entry.getValue(); 
 		}
 		
 		//Correction factors
-		Map<ICorrectionFactor,Integer> corrFactors = getCorrectionFactorsCount(mol, model);	
-		for (Map.Entry<ICorrectionFactor,Integer> entry : corrFactors.entrySet())
+		Map<ICorrectionFactor,Double> corrFactors = getCorrectionFactorsCount(mol, model);	
+		for (Map.Entry<ICorrectionFactor,Double> entry : corrFactors.entrySet())
 			modelValue +=  entry.getKey().getContribution() * entry.getValue();
 			
 		return modelValue;
-	}	
+	}
+	*/	
 	
 	public static Map<String,Integer> getGroupsCount(IAtomContainer mol, GroupContributionModel model)
 	{
@@ -98,15 +102,15 @@ public class Calculator
 	
 	
 	
-	public static Map<ICorrectionFactor,Integer> getCorrectionFactorsCount(IAtomContainer mol, GroupContributionModel model)
+	public static Map<ICorrectionFactor,Double> getCorrectionFactorsCount(IAtomContainer mol, GroupContributionModel model)
 	{
-		Map<ICorrectionFactor,Integer> corrFactors = new HashMap<ICorrectionFactor,Integer>();
+		Map<ICorrectionFactor,Double> corrFactors = new HashMap<ICorrectionFactor,Double>();
 		List<ICorrectionFactor> modelCorrFactors = model.getCorrectionFactors();
 		for (ICorrectionFactor factor : modelCorrFactors)
 		{
-			int count = factor.calculateFor(mol);
-			if (count > 0)
-				corrFactors.put(factor, new Integer(count));
+			double cf = factor.calculateFor(mol);
+			if (cf != 0.0)
+				corrFactors.put(factor, cf);
 		}
 			
 		return corrFactors;

@@ -14,13 +14,8 @@ public class SLNBond extends SMARTSBond {
 
 	public boolean matches(IBond bond) {
 		// 1. Matching the bond type
-		boolean FlagMatchBondType = false;
-
-		if (bondType == 0) // any bond
-			FlagMatchBondType = true;
-		else
-			FlagMatchBondType = ((bond.getOrder().ordinal() + 1) == bondType);
-
+		boolean FlagMatchBondType = SLNBondExpression.match_type(bondType, bond);
+		
 		if (!FlagMatchBondType)
 			return false;
 
@@ -46,5 +41,12 @@ public class SLNBond extends SMARTSBond {
 		else
 			return (SLNConst.bondTypeAttributeToSLNString(bondType) + bondExpression
 					.toString());
+	}
+	
+	public SLNBond clone() {
+		SLNBond bond = new SLNBond(getBuilder());
+		bond.bondType = bondType;
+		bond.bondExpression = (bondExpression==null) ? null : bondExpression.clone();
+		return bond;
 	}
 }

@@ -5,30 +5,13 @@
 	<parent>
 		<artifactId>ambit2-all</artifactId>
 		<groupId>ambit</groupId>
-		<version>3.3.0-SNAPSHOT</version>
+		<version>4.1.0-SNAPSHOT</version>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>ambit2-core</artifactId>
 	<packaging>jar</packaging>
 	<name>ambit2-core</name>
-	<!-- <repositories> <repository> <id>UCC-repo</id> <name>UCC repositories</name> 
-		<url>https://maven.ch.cam.ac.uk/content/groups/ucc/</url> </repository> <repository> 
-		<id>UCC-repo-proxy</id> <name>UCC repositories proxy</name> <url>https://nexus.ideaconsult.net/content/repositories/ucc-repo/</url> 
-		</repository> </repositories> -->
-	<properties>
-		<jdk.version>22</jdk.version>
-		<maven.compiler.source>${jdk.version}</maven.compiler.source>
-		<maven.compiler.target>${jdk.version}</maven.compiler.target>
-		<cdk.version>2.10-SNAPSHOT</cdk.version>
-		<jackson.version>2.17.2</jackson.version>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-	</properties>
-	<repositories>
-		<repository>
-			<id>ossrh</id>
-			<url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-		</repository>
-	</repositories>
+
 	<dependencies>
 
 		<dependency>
@@ -37,22 +20,15 @@
 			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
-
 		<dependency>
 			<groupId>ambit</groupId>
 			<artifactId>ambit2-base</artifactId>
-		<!--	<version>${project.version}</version> -->
-			<version>1.0</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/../lib/ambit2-base.jar</systemPath>
+			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>ambit</groupId>
 			<artifactId>ambit2-rules</artifactId>
-			<!--	<version>${project.version}</version> -->
-			<version>1.0</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/../lib/ambit2-rules.jar</systemPath>
+			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.sun.xml.stream</groupId>
@@ -69,7 +45,6 @@
 			<artifactId>cdk-isomorphism</artifactId>
 			<version>${cdk.version}</version>
 		</dependency>
-
 		<dependency>
 			<groupId>org.openscience.cdk</groupId>
 			<artifactId>cdk-atomtype</artifactId>
@@ -82,12 +57,6 @@
 			<groupId>org.openscience.cdk</groupId>
 			<artifactId>cdk-sdg</artifactId>
 			<version>${cdk.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.openscience.cdk</groupId>
-			<artifactId>cdk-legacy</artifactId>
-			<version>${cdk.version}</version>
-			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.openscience.cdk</groupId>
@@ -146,11 +115,6 @@
 		</dependency>
 		<dependency>
 			<groupId>org.openscience.cdk</groupId>
-			<artifactId>cdk-jniinchi-support</artifactId>
-			<version>${cdk.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.openscience.cdk</groupId>
 			<artifactId>cdk-data</artifactId>
 			<version>${cdk.version}</version>
 		</dependency>
@@ -186,7 +150,17 @@
 			<artifactId>jackson-databind</artifactId>
 			<version>${jackson.version}</version>
 		</dependency>
-
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-annotations</artifactId>
+			<version>${jackson.version}</version>
+		</dependency>		
+		<dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-legacy</artifactId>
+			<version>${cdk.version}</version>
+			<scope>test</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-csv</artifactId>
@@ -216,4 +190,7 @@
 	<dependencyManagement>
 		<dependencies></dependencies>
 	</dependencyManagement>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
 </project>

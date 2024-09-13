@@ -20,18 +20,22 @@ import ambit2.base.exceptions.AmbitIOException;
 import ambit2.core.helper.CDKHueckelAromaticityDetector;
 import ambit2.core.io.FileInputState;
 import ambit2.core.io.InteractiveIteratingMDLReader;
+import ambit2.smarts.SmartsHelper;
 
 public class DataSet 
 {
 	public List<DataSetObject> dataObjects = new ArrayList<DataSetObject>();
+	public int nErrors = 0;
 	File datafile = null;
+	
+	public DataSet(){		
+	}
 	
 	
 	public DataSet(File f) throws Exception
 	{
 		datafile = f;
-		loadDataFromFile(datafile);
-		
+		loadDataFromFile(datafile);		
 	}
 	
 	public void loadDataFromFile(File file) throws Exception
@@ -52,8 +56,23 @@ public class DataSet
 			{
 				IAtomContainer molecule  = reader.next();
 				records_read++;
+				
 				if (molecule==null) {
 					records_error++;
+					DataSetObject dso = new DataSetObject();
+					dso.molecule = null;
+					dso.error = "Unable to read chemical object";
+					dataObjects.add(dso);
+					continue;
+				}
+				
+				if (molecule.getAtomCount() == 0)
+				{
+					records_error++;
+					DataSetObject dso = new DataSetObject();
+					dso.molecule = null;
+					dso.error = "Empty chemical object. Problem on object creation.";
+					dataObjects.add(dso);
 					continue;
 				}
 				
@@ -77,10 +96,10 @@ public class DataSet
 			try { reader.close(); } catch (Exception x) {}
 		}
 		
-		//TODO use basic Ambit io utils
+		nErrors = records_error;
 	}
 	
-	protected IIteratingChemObjectReader<IAtomContainer> getReader(InputStream in, String extension) throws CDKException, AmbitIOException {
+	static public IIteratingChemObjectReader<IAtomContainer> getReader(InputStream in, String extension) throws CDKException, AmbitIOException {
 		FileInputState instate = new FileInputState();
 		IIteratingChemObjectReader<IAtomContainer> reader ;
 		if (extension.endsWith(FileInputState._FILE_TYPE.SDF_INDEX.getExtension())) {
@@ -116,11 +135,60 @@ public class DataSet
 	}
 	
 	
-	void processMolecule(IAtomContainer molecule) throws Exception
+	public static void processMolecule(IAtomContainer molecule) throws Exception
 	{
 		AtomContainerManipulator.percieveAtomTypesAndConfigureAtoms(molecule);
 		CDKHueckelAromaticityDetector.detectAromaticity(molecule);
 	}
 	
+	public static DataSet makeDataSet(List<String> smilesList, 
+			List<Double> propertyValues, String propertyName) throws Exception
+	{
+		DataSet ds = new DataSet();
+		
+		for (int i = 0; i < smilesList.size(); i++)
+		{		
+			IAtomContainer mol = SmartsHelper.getMoleculeFromSmiles(smilesList.get(i));
+			AtomContainerManipulator.percieveAtomTypesAndConfigureAtoms(mol);
+			CDKHueckelAromaticityDetector.detectAromaticity(mol);
+			DataSetObject dso = new DataSetObject();
+			dso.molecule = mol;
+			if (propertyValues != null)
+				dso.molecule.setProperty(propertyName, propertyValues.get(i));
+			ds.dataObjects.add(dso);
+		}
+		
+		return ds;
+	}
 	
+	public String reportErrorsAsString()
+	{
+		StringBuffer sb = new StringBuffer();
+		for (int i = 0; i < dataObjects.size(); i++)
+		{
+			DataSetObject dso = dataObjects.get(i);
+			if (dso.error == null)
+				continue;
+			
+			sb.append("#");
+			sb.append(i+1);
+			sb.append("  ");
+			if (dso.molNotation != null)
+				sb.append (dso.molNotation);
+			else
+			{
+				try {
+					String smiles = SmartsHelper.moleculeToSMILES(dso.molecule, true);
+					sb.append(smiles);
+				}
+				catch (Exception e) {}
+			}
+			sb.append("  ");
+			sb.append(dso.error);
+			sb.append("\n");
+		}
+		
+		return sb.toString();
+		
+	}
 }

@@ -1,15 +1,23 @@
 package ambit2.structure2name.components;
 
+import org.openscience.cdk.interfaces.IAtom;
 import org.openscience.cdk.interfaces.IBond;
 
 public class ComponentConnection 
 {
 	public static enum ConType {
-		ATOM_ATOM, SPIRO, BOND_FUSE
+		ATOM_ATOM, SPIRO, COMMON_ATOM, BOND_FUSE, IS_SUB_COMPONENT, IS_SUPER_COMPONENT
 	}
 	
-	private ConType type = ConType.ATOM_ATOM;
-	private IIUPACComponent component;
+	public ConType type = ConType.ATOM_ATOM;
+	public IIUPACComponent components[] = new IIUPACComponent[2];
+	
+	//connection elements
+	public IAtom componentAtoms[] = new IAtom[2];	
+	public IBond.Order connectionBondOrder = IBond.Order.SINGLE;
+	public IBond fusedBond = null;
+	
+	/*	
 	private int curAtomIndex = 0;
 	private int connectedAtomIndex = 0;
 	private IBond.Order connBondOrder = IBond.Order.SINGLE;
@@ -105,5 +113,7 @@ public class ComponentConnection
 	public void setConnectedFusedAtomIndex(int connectedFusedAtomIndex) {
 		this.connectedFusedAtomIndex = connectedFusedAtomIndex;
 	}
+	
+	*/
 	
 }

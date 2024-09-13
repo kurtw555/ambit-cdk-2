@@ -138,9 +138,9 @@ public class SLNExpressionToken
 					+ param;
 			
 		case SLNConst.QA_ATTR_r:
-			return SLNConst.atomAttributeToSLNString(type)
-					+ SLNConst.comparisonOperationToSLNString(comparisonOperation)
-					+ param;
+			//It is a boolean attribute
+			return SLNConst.atomAttributeToSLNString(type);
+			
 			
 		case SLNConst.QA_ATTR_v:
 			return SLNConst.atomAttributeToSLNString(type)
@@ -186,7 +186,11 @@ public class SLNExpressionToken
 			return SLNConst.atomAttributeToSLNString(type) 
 					+ SLNConst.comparisonOperationToSLNString(comparisonOperation)
 					+ param;
-			
+		
+		case SLNConst.QA_ATTR_type:
+			return SLNConst.atomAttributeToSLNString(type) 
+					+ SLNConst.comparisonOperationToSLNString(comparisonOperation)
+					+ param;
 
 		case SLNConst.A_ATTR_USER_DEFINED:
 		{	
@@ -239,5 +243,16 @@ public class SLNExpressionToken
 				return bondAttributeToString();
 		}	
 	}
+	
+	public SLNExpressionToken clone() 
+	{
+		SLNExpressionToken expTok = new SLNExpressionToken(type);
+		expTok.attrName = attrName;
+		expTok.comparisonOperation = comparisonOperation;
+		expTok.param = param;
+		expTok.doubleParam = doubleParam;
+		expTok.stringParam = stringParam; 
+		return expTok;
+	}	
 
 }

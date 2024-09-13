@@ -79,8 +79,14 @@ public class SubstanceStudyFlatQueryTest extends QueryTest<SubstanceStudyFlatQue
 				if ("isUsedforClassification".equals(header))
 					continue;
 				if ("isUsedforMSDS".equals(header))
-					continue;				
-				if ("investigation".equals(header)) {
+					continue;
+				if ("resulttype".equals(header))
+					continue;
+				if ("auuid".equals(header))
+					continue;
+				if ("resultgroup".equals(header))
+					continue;								
+				if ("iuuid".equals(header)) {
 					if (record.get(header) != null)
 						Assert.assertEquals(test_investigation, record.get(header));
 					continue;
@@ -133,6 +139,7 @@ public class SubstanceStudyFlatQueryTest extends QueryTest<SubstanceStudyFlatQue
 		try {
 
 			Protocol p = new Protocol(null);
+			p.setTopCategory("TOX");
 			p.setCategory("TO_ACUTE_ORAL_SECTION");
 			SubstanceStudyFlatQuery q = new SubstanceStudyFlatQuery(p);
 
@@ -147,6 +154,159 @@ public class SubstanceStudyFlatQueryTest extends QueryTest<SubstanceStudyFlatQue
 			c.close();
 		}
 	}
+	
+	@Test
+	public void testSelectBySubstanceName_and_Study() throws Exception {
+		setUpDatabaseFromResource(getDbFile());
+		IDatabaseConnection c = getConnection();
+		ResultSet rs = null;
+		try {
+
+			Protocol p = new Protocol(null);
+			p.setTopCategory("TOX");
+			p.setCategory("TO_ACUTE_ORAL_SECTION");
+			SubstanceStudyFlatQuery q = new SubstanceStudyFlatQuery(_QUERY_TYPE.bysubstance_name,p,new String[] {
+					"testname"
+					});
+			executor.setConnection(c.getConnection());
+			executor.open();
+			rs = executor.process(q);
+			Assert.assertNotNull(rs);
+			browse(q, rs, 1);
+		} finally {
+			if (rs != null)
+				rs.close();
+			c.close();
+		}
+	}		
+	@Test
+	public void testSelectBySubstanceType_and_Study() throws Exception {
+		setUpDatabaseFromResource(getDbFile());
+		IDatabaseConnection c = getConnection();
+		ResultSet rs = null;
+		try {
+
+			Protocol p = new Protocol(null);
+			p.setTopCategory("TOX");
+			p.setCategory("TO_ACUTE_ORAL_SECTION");
+			SubstanceStudyFlatQuery q = new SubstanceStudyFlatQuery(_QUERY_TYPE.bysubstance_type,p,new String[] {
+					"Monoconstituent"
+					});
+			executor.setConnection(c.getConnection());
+			executor.open();
+			
+			rs = executor.process(q);
+			Assert.assertNotNull(rs);
+			browse(q, rs, 1);
+		} finally {
+			if (rs != null)
+				rs.close();
+			c.close();
+		}
+	}		
+	
+	@Test
+	public void testSelectByStructure_names() throws Exception {
+		setUpDatabaseFromResource(getDbFile());
+		IDatabaseConnection c = getConnection();
+		ResultSet rs = null;
+		try {
+
+			Protocol p = new Protocol(null);
+			p.setTopCategory("TOX");
+			p.setCategory("TO_ACUTE_ORAL_SECTION");
+			SubstanceStudyFlatQuery q = new SubstanceStudyFlatQuery(_QUERY_TYPE.bystructure_name,p,new String[] {
+					"123-45-6"
+					});
+			executor.setConnection(c.getConnection());
+			executor.open();
+			rs = executor.process(q);
+			Assert.assertNotNull(rs);
+			browse(q, rs, 1);
+		} finally {
+			if (rs != null)
+				rs.close();
+			c.close();
+		}
+	}	
+	
+	
+	public void testSelectByStructure_smiles() throws Exception {
+		setUpDatabaseFromResource(getDbFile());
+		IDatabaseConnection c = getConnection();
+		ResultSet rs = null;
+		try {
+
+			Protocol p = new Protocol(null);
+			p.setTopCategory("TOX");
+			p.setCategory("TO_ACUTE_ORAL_SECTION");
+			SubstanceStudyFlatQuery q = new SubstanceStudyFlatQuery(_QUERY_TYPE.bystructure_smiles,p,new String[] {
+					"O=C([O-])C(CC)CCCC.O=C([O-])C(CC)CCCC.[SnH4+2]","[F-].[Na+].F","[Br-].C=1C=CC(=CC1)[P+](C=2C=CC=CC2)(C=3C=CC=CC3)CC","[Fe]"
+					});
+			executor.setConnection(c.getConnection());
+			executor.open();
+			rs = executor.process(q);
+			Assert.assertNotNull(rs);
+			browse(q, rs, 1);
+		} finally {
+			if (rs != null)
+				rs.close();
+			c.close();
+		}
+	}	
+	
+	@Test
+	public void testSelectByStructure_inchikey() throws Exception {
+		setUpDatabaseFromResource(getDbFile());
+		IDatabaseConnection c = getConnection();
+		ResultSet rs = null;
+		try {
+
+			Protocol p = new Protocol(null);
+			p.setTopCategory("TOX");
+			p.setCategory("TO_ACUTE_ORAL_SECTION");
+			SubstanceStudyFlatQuery q = new SubstanceStudyFlatQuery(_QUERY_TYPE.bystructure_inchikey,p,new String[] {
+					"BFXAWOHHDUIALU-UHFFFAOYSA-M",
+					"IKNSDPVLAJQDTH-UHFFFAOYSA-L",
+					"JHYNXXDQQHTCHJ-UHFFFAOYSA-M",
+					"XEEYBQQBJWHFJM-UHFFFAOYSA-N"
+					});
+			executor.setConnection(c.getConnection());
+			executor.open();
+			rs = executor.process(q);
+			Assert.assertNotNull(rs);
+			browse(q, rs, 1);
+		} finally {
+			if (rs != null)
+				rs.close();
+			c.close();
+		}
+	}	
+	
+
+	@Test
+	public void testSelectByStructure_idchemical() throws Exception {
+		setUpDatabaseFromResource(getDbFile());
+		IDatabaseConnection c = getConnection();
+		ResultSet rs = null;
+		try {
+
+			Protocol p = new Protocol(null);
+			p.setTopCategory("TOX");
+			p.setCategory("TO_ACUTE_ORAL_SECTION");
+			SubstanceStudyFlatQuery q = new SubstanceStudyFlatQuery(p,new int[]{11});
+			executor.setConnection(c.getConnection());
+			executor.open();
+			rs = executor.process(q);
+			Assert.assertNotNull(rs);
+			browse(q, rs, 1);
+		} finally {
+			if (rs != null)
+				rs.close();
+			c.close();
+		}
+	}
+		
 	
 
 	@Test

@@ -3,11 +3,11 @@ Package: ambit2.core
 
 Name: ambit2/core/
 Specification-Title: ambit2.core
-Specification-Version: 3.3.0-SNAPSHOT
+Specification-Version: 4.1.0-SNAPSHOT
 Specification-Vendor: Ideaconsult LTD
 Implementation-Title: ambit2.core
-Implementation-Version: 3.3.0-SNAPSHOT-${buildNumber}-${timestamp}
+Implementation-Version: 4.1.0-SNAPSHOT-${buildNumber}-${timestamp}
 Implementation-Vendor: Ideaconsult Ltd.
 Package-Title: ambit2.core
-Package-Version: 3.3.0-SNAPSHOT
+Package-Version: 4.1.0-SNAPSHOT
 Package-Vendor: Ideaconsult Ltd.

@@ -1,6 +1,7 @@
 package ambit2.groupcontribution.cli;
 
 import java.io.File;
+import java.io.RandomAccessFile;
 import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
@@ -13,13 +14,19 @@ import org.apache.commons.cli.PosixParser;
 
 import ambit2.groupcontribution.GCMParser;
 import ambit2.groupcontribution.GroupContributionModel;
+import ambit2.groupcontribution.GroupContributionModel.GCMConfigInfo;
 import ambit2.groupcontribution.Learner;
 import ambit2.groupcontribution.correctionfactors.DescriptorInfo;
+import ambit2.groupcontribution.correctionfactors.ICorrectionFactor;
 import ambit2.groupcontribution.dataset.DataSet;
 import ambit2.groupcontribution.descriptors.ILocalDescriptor;
 import ambit2.groupcontribution.fragmentation.Fragmentation;
+import ambit2.groupcontribution.io.GCM2Json;
+import ambit2.groupcontribution.io.GCM2Properties;
 import ambit2.groupcontribution.utils.math.CrossValidation;
 import ambit2.groupcontribution.utils.math.ValidationConfig;
+import ambit2.smarts.IsomorphismTester;
+import ambit2.smarts.SmartsParser;
 
 
 
@@ -28,14 +35,20 @@ public class GroupContributionCli
 	private static final String title = "Group contribution modeling";
 	
 	public String trainSetFile = null;
+	public String externalSetFile = null;
+	public String matrixOutputFile = null;
 	public String gcmConfigFile = null;
+	public String outputGCMFile = null;
 	public String localDescriptors = null;
 	public String globalDescriptors = null;
 	public String targetProperty = null;
 	public Double threshold = null;
 	public String gcmType = null;
 	public String validation = null;
-	
+	public String corFactors = null;
+	public String resultBufferOutFile = null;
+	public boolean FlagFragmenationOnly = false;
+	public int fractionDigits = -1;
 	
 	public static void main(String[] args) {
 		GroupContributionCli gcCli = new GroupContributionCli();
@@ -66,11 +79,56 @@ public class GroupContributionCli
 			}
 			@Override
 			public String getDescription() {
-				return "GCM configuration (.json) file";
+				return "Input GCM configuration (.json) file";
 			}
 			@Override
 			public String getShortName() {
-				return "c";
+				return "i";
+			}
+		},
+		
+		output {
+			@Override
+			public String getArgName() {
+				return "out-file";
+			}
+			@Override
+			public String getDescription() {
+				return "Output GCM configuration to a *.json file or to console (con)";
+			}
+			@Override
+			public String getShortName() {
+				return "o";
+			}
+		},
+		
+		result_buffer_out {
+			@Override
+			public String getArgName() {
+				return "out-file";
+			}
+			@Override
+			public String getDescription() {
+				return "Output result buffer to a file";
+			}
+			@Override
+			public String getShortName() {
+				return "b";
+			}
+		},
+		
+		matrix_output {
+			@Override
+			public String getArgName() {
+				return "out-file";
+			}
+			@Override
+			public String getDescription() {
+				return "Output matrices to a file";
+			}
+			@Override
+			public String getShortName() {
+				return "a";
 			}
 		},
 		
@@ -86,6 +144,21 @@ public class GroupContributionCli
 			@Override
 			public String getShortName() {
 				return "t";
+			}
+		},
+		
+		extern {
+			@Override
+			public String getArgName() {
+				return "extern";
+			}
+			@Override
+			public String getDescription() {
+				return "External data set";
+			}
+			@Override
+			public String getShortName() {
+				return "x";
 			}
 		},
 		
@@ -156,11 +229,26 @@ public class GroupContributionCli
 			}
 			@Override
 			public String getDescription() {
-				return "Group contribution model type: atomic, bond_based, ...";
+				return "Group contribution model type: atomic, bond_based, second_order";
 			}
 			@Override
 			public String getShortName() {
 				return "m";
+			}
+		},
+		
+		frac_digits {
+			@Override
+			public String getArgName() {
+				return "frac_digits";
+			}
+			@Override
+			public String getDescription() {
+				return "Report fraction digits";
+			}
+			@Override
+			public String getShortName() {
+				return "g";
 			}
 		},
 		
@@ -171,14 +259,50 @@ public class GroupContributionCli
 			}
 			@Override
 			public String getDescription() {
-				return "Validation specification: <self>,<LOO>,<YS-n>,<CV-n<-m>>,<vebose>,<boot-n>,<external>";
+				return "Validation specification: <self>,<LOO>,<YS-n>,<CV-n<-m>>,<verbose>,<boot-n>,<external>";
 			}
 			@Override
 			public String getShortName() {
 				return "v";
 			}
 		},
+
+		correction_factors {
+			@Override
+			public String getArgName() {
+				return "correction-factors";
+			}
+			@Override
+			public String getDescription() {
+				return "Correction factors specification: G(SMARTS),...";
+			}
+			@Override
+			public String getShortName() {
+				return "c";
+			}
+		},
 		
+		fragmentation {
+			@Override
+			public String getArgName() {
+				return null;
+			}
+			@Override
+			public String getDescription() {
+				return "Only fragmentation is calculated. No modeling";
+			}
+			@Override
+			public String getShortName() {
+				return "f";
+			}
+			//This is needed of options without argument
+			public Option createOption() {
+		    	Option option   = OptionBuilder.withLongOpt(name())
+		        .withDescription(getDescription())
+		        .create(getShortName());
+		    	return option;
+			}
+		},		
 		
 		help {
 			@Override
@@ -232,10 +356,34 @@ public class GroupContributionCli
 			trainSetFile = argument;
 			break;
 		}
+		case extern: {
+			if ((argument == null) || "".equals(argument.trim()))
+				return;
+			externalSetFile = argument;
+			break;
+		}
 		case config: {
 			if ((argument == null) || "".equals(argument.trim()))
 				return;
 			gcmConfigFile = argument;
+			break;
+		}
+		case output: {
+			if ((argument == null) || "".equals(argument.trim()))
+				return;
+			outputGCMFile = argument;
+			break;
+		}
+		case result_buffer_out: {
+			if ((argument == null) || "".equals(argument.trim()))
+				return;
+			resultBufferOutFile = argument;
+			break;
+		}
+		case matrix_output: {
+			if ((argument == null) || "".equals(argument.trim()))
+				return;
+			matrixOutputFile = argument;
 			break;
 		}
 		case local_descriptors: {
@@ -278,6 +426,32 @@ public class GroupContributionCli
 				return;
 			validation = argument;
 			break;
+		}		
+		case correction_factors: {
+			if ((argument == null) || "".equals(argument.trim()))
+				return;
+			corFactors = argument;
+			break;
+		}		
+		case fragmentation: {
+			FlagFragmenationOnly = true;
+			break;
+		}
+		case frac_digits: {
+			if ((argument == null) || "".equals(argument.trim()))
+				return;
+			try {
+				int fd = Integer.parseInt(argument);
+				if (fd <= 0)
+					System.out.println("Incorrect option -g argument: " + argument);
+				else
+					fractionDigits = fd;
+			}
+			catch (Exception e)
+			{
+				System.out.println("Incorrect option -g argument: " + argument);
+			}
+			break;
 		}
 		}
 	}
@@ -304,8 +478,8 @@ public class GroupContributionCli
 			return runGCM();	
 
 		} catch (Exception x ) {
-			System.out.println("**********" + x.getMessage());
-			x.printStackTrace();
+			System.out.println("**** GCM " + x.getMessage());
+			//x.printStackTrace();
 			//printHelp(options,x.getMessage());
 			return -1;
 		} finally {
@@ -319,51 +493,161 @@ public class GroupContributionCli
 	
 	protected int runGCM() throws Exception
 	{	
+		GroupContributionModel gcm;
+		GroupContributionModel.GCMConfigInfo addConfigInfo;
 				
 		if (gcmConfigFile == null)
 		{	
 			System.out.println("Configuration file not assigned. Getting data from command line options");
+			gcm = new GroupContributionModel();
+			addConfigInfo = gcm.getAdditionalConfig();
 			
+			if (resultBufferOutFile != null)
+				gcm.getReportConfig().FlagBufferOutput = true;
+				
 			if (trainSetFile == null)
 				throw new Exception("Training set file not assigned! Use -t command line option.");
 			
-			if (trainSetFile != null) 
+			if (trainSetFile != null)
+			{	
 				System.out.println("train set file: " + trainSetFile);
-			if (gcmConfigFile != null)
-				System.out.println("gcm config: " + gcmConfigFile);
+				addConfigInfo.trainingSetFile = trainSetFile;
+			}
+			if (externalSetFile != null)
+			{	
+				System.out.println("External set file: " + trainSetFile);
+				addConfigInfo.externalSetFile = externalSetFile;
+			}
+			
 			if (localDescriptors != null)
+			{	
 				System.out.println("Local descriptors: " + localDescriptors);
+				addConfigInfo.localDescriptorsString = localDescriptors;
+			}
+			else
+			{
+				System.out.println("Local descriptors not assigned!!");
+				System.out.println("Using by default: A");
+				addConfigInfo.localDescriptorsString = "A";
+			}
+			
+			
+			if (corFactors != null)
+			{	
+				System.out.println("Correction factors: " + corFactors);
+				addConfigInfo.corFactorsString = corFactors;
+			}
+			
 			if (globalDescriptors != null)
+			{	
 				System.out.println("Global descriptors: " + globalDescriptors);
+				addConfigInfo.globalDescriptorsString = globalDescriptors;
+			}
+			
 			if (threshold != null)
+			{	
 				System.out.println("Column filtration threshold: " + threshold);
+				addConfigInfo.columnFiltrationthreshold = threshold;
+			}
+			else
+			{
+				double defThesh = 0.001;
+				System.out.println("Using default Column filtration threshold: " + defThesh);
+				addConfigInfo.columnFiltrationthreshold = defThesh;
+			}
+			
 			if (targetProperty != null)
+			{	
 				System.out.println("Target property: " + targetProperty);
+				gcm.setTargetProperty(targetProperty);
+			}
+			else 
+				throw new Exception("Target property not assigned! Use -p command line option.");
+			
 			if (validation != null)
+			{	
 				System.out.println("Validation: " + validation);
-				
+				addConfigInfo.validationString = validation;
+			}
+			if (gcmType != null)
+			{
+				addConfigInfo.gcmTypeString = gcmType;
+			}
+			
+			if (FlagFragmenationOnly)
+				System.out.println("Fragmentation only");
+			
+			if (fractionDigits >= 0)
+				addConfigInfo.fractionDigits = fractionDigits;						
 		}
 		else
-		{
-			//TODO handle config file
+		{			
+			System.out.println("GCM config: " + gcmConfigFile);
+			
+			if (gcmConfigFile.toLowerCase().endsWith(".json"))
+			{
+				GCM2Json g2j = new GCM2Json();
+				gcm = g2j.loadFromJSON(new File(gcmConfigFile));
+
+				if (!g2j.configErrors.isEmpty())
+				{	
+					System.out.println(g2j.getAllErrorsAsString());
+					return -1;
+				}	
+				//else if (!g2j.configErrors.isEmpty())
+				//	System.out.println(g2j.getAllErrorsAsString());
+
+				addConfigInfo = gcm.getAdditionalConfig();
+
+				//String gcm_json = gcm.toJsonString();
+				//System.out.println(gcm_json);			
+				//return 0;
+			}
+			else
+			{
+				GCM2Properties g2p = new GCM2Properties();
+				gcm = g2p.loadFromProperties(gcmConfigFile);
+				
+				if (!g2p.errors.isEmpty())
+				{	
+					System.out.println(g2p.getAllErrorsAsString());
+					return -1;
+				}
+				
+				addConfigInfo = gcm.getAdditionalConfig();
+				
+				if (!g2p.warnings.isEmpty())
+					System.out.println(g2p.getAllWarningAsString());
+
+			}
+			
+			printGCMConfiguration(gcm);
 		}
 		
 		
-		DataSet trainDataSet = new DataSet(new File(trainSetFile));
+		//Setup additional config info
+		DataSet trainDataSet = new DataSet(new File(addConfigInfo.trainingSetFile));
+		if (trainDataSet.nErrors != 0)
+		{	
+			System.out.println("Errors on training dataset reading:");
+			System.out.println(trainDataSet.reportErrorsAsString());
+			return -1;
+		}	
 		
-		GroupContributionModel gcm = new GroupContributionModel();
-		gcm.setTargetEndpoint(targetProperty);
-		if (gcmType != null)
+				
+		if (addConfigInfo.gcmTypeString != null)
 		{
-			GroupContributionModel.Type type = getModelType(gcmType);
+			GroupContributionModel.Type type = getModelType(addConfigInfo.gcmTypeString);
 			if (type != null)
 				gcm.setModelType(type);
 		}
 		System.out.println("GCM type : " + gcm.getModelType().toString());
 		
-		GCMParser gcmParser = new GCMParser();
+		GCMParser gcmParser = new GCMParser(new SmartsParser(), new IsomorphismTester());
 		
-		List<ILocalDescriptor> locDescriptors = gcmParser.getLocalDescriptorsFromString(localDescriptors);
+		
+		List<ILocalDescriptor> locDescriptors = 
+				gcmParser.getLocalDescriptorsFromString(addConfigInfo.localDescriptorsString);
 		if (!gcmParser.getErrors().isEmpty())
 		{
 			System.out.println("Errors:\n" + gcmParser.getAllErrorsAsString());
@@ -372,9 +656,26 @@ public class GroupContributionCli
 		else
 			gcm.setLocalDescriptors(locDescriptors);
 		
-		if (globalDescriptors != null)
+		if (addConfigInfo.corFactorsString != null)
 		{
-			List<DescriptorInfo> globDescriptors = gcmParser.getGlobalDescriptorsFromString(globalDescriptors);
+			List<ICorrectionFactor> cfs = 
+					gcmParser.getCorrectionFactorsFromString(addConfigInfo.corFactorsString, ',');
+			if (!gcmParser.getErrors().isEmpty())
+			{
+				System.out.println("Errors:\n" + gcmParser.getAllErrorsAsString());
+				return -1;
+			}
+			else
+			{
+				if (!cfs.isEmpty())
+					gcm.setCorrectionFactors(cfs);
+			}
+		}
+		
+		if (addConfigInfo.globalDescriptorsString != null)
+		{
+			List<DescriptorInfo> globDescriptors = 
+					gcmParser.getGlobalDescriptorsFromString(addConfigInfo.globalDescriptorsString);
 			if (!gcmParser.getErrors().isEmpty())
 			{
 				System.out.println("Errors:\n" + gcmParser.getAllErrorsAsString());
@@ -387,33 +688,151 @@ public class GroupContributionCli
 			}
 		}
 		
-		if (threshold != null)
-			gcm.setColStatPercentageThreshold(threshold);
+		
+		if (addConfigInfo.columnFiltrationthreshold != null)
+			gcm.setColStatPercentageThreshold(addConfigInfo.columnFiltrationthreshold);
 			
-		if (validation != null)
+		if (addConfigInfo.validationString != null)
 		{
-			ValidationConfig valCfg = getValidationConfigFromString(validation);
+			ValidationConfig valCfg = getValidationConfigFromString(addConfigInfo.validationString);
 			if (valCfg == null)
 				return -2;
 			gcm.setValidationConfig(valCfg);
 		}
+		else
+		{	
+			gcm.getValidationConfig().reset();
+			gcm.getValidationConfig().verboseReport = true;
+		}	
 		
-		//Fragmentation.makeFragmentation(trainDataSet, gcm);
+		if (addConfigInfo.fractionDigits >= 0)
+		{
+			gcm.getReportConfig().fractionDigits = addConfigInfo.fractionDigits;
+		}
+		
 		
 		Learner learner = new Learner();
 		learner.setModel(gcm);
 		learner.setTrainDataSet(trainDataSet);
 		
+		if (FlagFragmenationOnly)
+		{
+			learner.performFragmentationOnly();
+			saveMatricesToOutFile(learner);
+			return 0;
+		}
+		
+		
 		int res = learner.train();
 		if (res != 0)
+		{	
 			System.out.println(learner.getAllErrorsAsString());
-		
+			return res;
+		}
+		saveMatricesToOutFile(learner);
 		
 		System.out.println();
 		learner.validate();
 		
+		//External test
+		if (addConfigInfo.externalSetFile != null)
+		{
+			DataSet externalDataSet = new DataSet(new File(addConfigInfo.externalSetFile));
+			learner.setExternalDataSet(externalDataSet);
+			learner.performExternalValidation();
+		}
+		
+		saveOutputGCMToFile(gcm);
+		saveResultBufferToFile(gcm);
 		return 0;
-	}	
+	}
+	
+	void saveOutputGCMToFile(GroupContributionModel gcm)
+	{
+		if (outputGCMFile == null)
+			return;
+		
+		if (outputGCMFile.equalsIgnoreCase("con") || 
+				outputGCMFile.equalsIgnoreCase("console") )
+		{	
+			String gcm_json = gcm.toJsonString();
+			System.out.println(gcm_json);
+			return;
+		}	
+		
+		try 
+		{
+			File file = new File (outputGCMFile);
+			RandomAccessFile f = new RandomAccessFile(file, "rw");
+			f.setLength(0);
+			String gcm_json = gcm.toJsonString();
+			f.write(gcm_json.getBytes());
+			f.close();
+		}
+		catch (Exception x) {
+			System.out.println("Error on creating GCM output json file: " 
+				+ x.getMessage());
+		}
+	}
+	
+	
+	void saveResultBufferToFile(GroupContributionModel gcm)
+	{
+		if (resultBufferOutFile == null)
+			return;
+		
+		String out_buffer = gcm.getReport();
+		if (out_buffer == null)
+			return;
+		
+		try 
+		{
+			File file = new File (resultBufferOutFile);
+			RandomAccessFile f = new RandomAccessFile(file, "rw");
+			f.setLength(0);
+			
+			f.write(out_buffer.getBytes());
+			f.close();
+		}
+		catch (Exception x) {
+			System.out.println("Error on creating result buffer out file: " 
+				+ x.getMessage());
+		}
+	}
+	
+	void saveMatricesToOutFile(Learner learner) throws Exception
+	{
+		if (matrixOutputFile == null)
+			return;
+		
+		String sep = ",";
+		GCMConfigInfo gci = learner.getModel().getAdditionalConfig();
+		
+		if (matrixOutputFile.equalsIgnoreCase("con") || 
+				matrixOutputFile.equalsIgnoreCase("console") )
+		{	
+			String matrixOutStr = learner.getMatricesAsString(sep, true, 
+					true, gci.corFactorsString != null, gci.globalDescriptorsString != null, true, true);
+			System.out.println(matrixOutStr);
+			return;
+		}	
+		
+		try 
+		{
+			File file = new File (matrixOutputFile);
+			RandomAccessFile f = new RandomAccessFile(file, "rw");
+			f.setLength(0);
+			String matrixOutStr = learner.getMatricesAsString(sep, true, 
+					true, gci.corFactorsString != null, gci.globalDescriptorsString != null, true, true);
+			f.write(matrixOutStr.getBytes());
+			f.close();
+		}
+		catch (Exception x) {
+			System.out.println("Error on creating matrix output file: " 
+				+ x.getMessage());
+		}
+	}
+	
 	
 	GroupContributionModel.Type getModelType(String s)
 	{
@@ -421,7 +840,17 @@ public class GroupContributionCli
 			return GroupContributionModel.Type.ATOMIC;
 		if (s.equalsIgnoreCase("bond_based"))
 			return GroupContributionModel.Type.BOND_BASED;
-		//...		
+		if (s.equalsIgnoreCase("second_order"))
+			return GroupContributionModel.Type.SECOND_ORDER;
+		//...
+		
+		if (s.equalsIgnoreCase("atom_local_property"))
+			return GroupContributionModel.Type.ATOM_LOCAL_PROPERTY;
+		if (s.equalsIgnoreCase("bond_local_property"))
+			return GroupContributionModel.Type.BOND_LOCAL_PROPERTY;
+		if (s.equalsIgnoreCase("atom_pair_local_property"))
+			return GroupContributionModel.Type.ATOM_PAIR_LOCAL_PROPERTY;
+				
 		return null;
 	}
 	
@@ -534,4 +963,30 @@ public class GroupContributionCli
 		
 		return valCfg;
 	}
+	
+	void printGCMConfiguration(GroupContributionModel gcm)
+	{	
+		GroupContributionModel.GCMConfigInfo addConfigInfo = gcm.getAdditionalConfig();
+		System.out.println("train set file: " + addConfigInfo.trainingSetFile);
+		
+		if (addConfigInfo.externalSetFile != null)
+			System.out.println("External set file: " + addConfigInfo.externalSetFile);
+		
+		System.out.println("Local descriptors: " + addConfigInfo.localDescriptorsString);
+		
+		if (addConfigInfo.corFactorsString != null)
+		System.out.println("Correction factors: " + addConfigInfo.corFactorsString);		
+			
+		if (addConfigInfo.globalDescriptorsString != null)
+			System.out.println("Global descriptors: " + addConfigInfo.globalDescriptorsString);
+			
+		System.out.println("Column filtration threshold: " + addConfigInfo.columnFiltrationthreshold);
+		
+		System.out.println("Target property: " + gcm.getTargetProperty());		
+		
+		if (addConfigInfo.validationString != null)
+			System.out.println("Validation: " + addConfigInfo.validationString);
+		
+	}
+		
 }

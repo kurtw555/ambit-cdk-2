@@ -1,10 +1,19 @@
 package ambit2.sln;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.openscience.cdk.interfaces.IAtom;
 import org.openscience.cdk.interfaces.IChemObjectBuilder;
 import org.openscience.cdk.isomorphism.matchers.QueryAtomContainer;
 import org.openscience.cdk.silent.SilentChemObjectBuilder;
 
+import ambit2.sln.dictionary.AtomDictionaryObject;
+import ambit2.sln.dictionary.MacroAtomDictionaryObject;
 import ambit2.sln.dictionary.SLNDictionary;
+import ambit2.smarts.TopLayer;
 
 public class SLNContainer extends QueryAtomContainer 
 {
@@ -21,15 +30,17 @@ public class SLNContainer extends QueryAtomContainer
 	// Flags that determine what types of objects are stored in SLNContainer
 	private boolean IsStructureOnly = false;
 	private SLNObjectType slnObjectType =  SLNObjectType.QUERY;
-		
-
+	private boolean FlagHasDictionaryObjects = false;
+	private boolean FlagNeedsContainerExpansionForQueryMatch = false;
+	
+	
 	private SLNContainerAttributes attributes = new SLNContainerAttributes();
-	//private SLNAtomExpression atomExpression = new SLNAtomExpression();
-	//private SLNBondExpression bondExpression = new SLNBondExpression();
-
+	
+	
 	public SLNContainer(IChemObjectBuilder builder) {
 		super(builder);
 	}
+	
 	public SLNContainerAttributes getAttributes() {
 		return attributes;
 	}
@@ -77,10 +88,48 @@ public class SLNContainer extends QueryAtomContainer
 	public SLNObjectType getSlnObjectType() {
 		return slnObjectType;
 	}
-	
+		
+	public boolean isFlagHasDictionaryObjects() {
+		return FlagHasDictionaryObjects;
+	}
+
+	public boolean isFlagNeedsContainerExpansionForQueryMatch() {
+		return FlagNeedsContainerExpansionForQueryMatch;
+	}
+
 	public void recognizeSlnObjectType() {
 		//TODO 
 		//may be remove function checkIsStructureOnly()
+	}
+	
+	public int[] getValenceAtomIndices() {
+		if (getAttributes().valences == null)
+			return null;
+		
+		List<Integer> atNums1based = get1basedAtomIndicesCountingHAtoms();
+		int n = getAttributes().valences.length;		
+		int valAtInd[] = new int[n];
+		
+		for (int i = 0; i < n; i++)
+		{
+			Integer v = getAttributes().valences[i];
+			valAtInd[i] = atNums1based.indexOf(v);
+			//System.out.println("valAtInd = "  + valAtInd[i]);
+		}
+		return valAtInd;
+	}
+	
+	public List<Integer> get1basedAtomIndicesCountingHAtoms() {
+		int n = getAtomCount();
+		int curNum = 1;
+		List<Integer> ind = new ArrayList<Integer>();
+		
+		for (int i = 0; i<n; i++)
+		{
+			ind.add(curNum);
+			curNum = curNum + ((SLNAtom)getAtom(i)).numHAtom + 1;
+		}		
+		return ind;
 	}
 	
 	

@@ -1,7 +1,6 @@
 package ambit2.smarts.test;
 
 import java.util.List;
-import java.util.logging.Logger;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
@@ -11,7 +10,7 @@ import org.openscience.cdk.interfaces.IAtomContainer;
 import org.openscience.cdk.isomorphism.matchers.IQueryAtomContainer;
 import org.openscience.cdk.silent.SilentChemObjectBuilder;
 import org.openscience.cdk.smiles.SmilesParser;
-import org.openscience.cdk.tools.ILoggingTool;
+import org.openscience.cdk.tools.LoggingTool;
 
 import ambit2.smarts.IsomorphismTester;
 import ambit2.smarts.SmartsHelper;
@@ -22,15 +21,14 @@ public class TestSmartsParser extends TestCase
 {
 	public SmartsParser smartsParser = new SmartsParser();
 	public IsomorphismTester isoTester = new IsomorphismTester();
-	public Logger logger;
+	public LoggingTool logger;
 	public IQueryAtomContainer mQuery;
 	public IAtomContainer mTarget;
 	SmartsHelper helper = new SmartsHelper(SilentChemObjectBuilder.getInstance());
 	
 	public TestSmartsParser() 
 	{   
-		//logger = new LoggingTool(this);
-		logger = Logger.getLogger(this.getClass().getName());
+		logger = new LoggingTool(this);
 		smartsParser.mSupportSmirksSyntax = true;
 		smartsParser.setComponentLevelGrouping(true);
 	}

@@ -34,6 +34,7 @@ import java.io.OutputStream;
 import java.util.Properties;
 
 public class Preferences {
+	
 	protected static PropertyChangeSupport propertyChangeSupport;
 	public static String FASTSMARTS="FASTSMARTS";
 	public static String SHOW_AROMATICITY="showAromaticity";

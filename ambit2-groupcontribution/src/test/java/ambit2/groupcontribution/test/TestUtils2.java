@@ -18,7 +18,7 @@ import org.openscience.cdk.silent.SilentChemObjectBuilder;
 import org.openscience.cdk.smiles.SmilesParser;
 import org.openscience.cdk.tools.manipulator.AtomContainerManipulator;
 
-
+import ambit2.base.exceptions.EmptyMoleculeException;
 import ambit2.groupcontribution.Calculator;
 import ambit2.groupcontribution.GCMParser;
 import ambit2.groupcontribution.GroupContributionModel;
@@ -28,13 +28,13 @@ import ambit2.groupcontribution.descriptors.LDAtomHybridization;
 import ambit2.groupcontribution.descriptors.LDAtomSymbol;
 import ambit2.groupcontribution.descriptors.LDAtomValency;
 import ambit2.groupcontribution.descriptors.LDHNum;
+import ambit2.groupcontribution.nmr.HNMRShifts;
+import ambit2.groupcontribution.nmr.nmr_1h.HNMRKnowledgeBase;
+import ambit2.groupcontribution.nmr.nmr_1h.HNMRPredefinedKnowledgeBase;
+import ambit2.groupcontribution.nmr.nmr_1h.HShift;
 import ambit2.smarts.SmartsHelper;
 
-/**
- * 
- * Please refactor as JUnit tests
- *
- */
+
 public class TestUtils2 
 {
 	public static GCMParser gcmParser = new GCMParser();
@@ -57,10 +57,12 @@ public class TestUtils2
 		//testDescriptor(new AverageMolecularWeightDescriptor(), "CCC");
 		
 		//testDataSet("/test-dataset.txt");
-		testDataSet("/Volumes/Data/test-dataset.csv");
-		
+		//testDataSet("/Volumes/Data/test-dataset.csv");
 		
 		//testLocalDescriptorsParsing("FC,HeN,A,H,Val");
+		
+		//testHNMRKnowledgeBase();
+		testHNMRKnowledgeBase("/Projects/HNMR/hnmr-knowledgebase-v04_NK.txt");
 	}
 	
 	public static void testGroupCount(String smiles, GroupContributionModel model) throws Exception
@@ -147,4 +149,52 @@ public class TestUtils2
 			System.out.println(descriptors.get(i).getShortName() + " " + descriptors.get(i).getName());
 		
 	}
+	
+	public static void testHNMRKnowledgeBase() throws EmptyMoleculeException
+	{
+		System.out.println("Testing HNMRPredefinedKnowledgeBase:");
+		HNMRKnowledgeBase hnmrBase = HNMRPredefinedKnowledgeBase.getHNMRKnowledgeBase();
+		hnmrBase.configure();
+		
+		if (hnmrBase.errors.isEmpty())
+			System.out.println(hnmrBase.toString());
+		else
+			System.out.println("Errors:\n" + hnmrBase.getAllErrorsAsString());
+		
+	}
+	
+	public static void testHNMRKnowledgeBase(String fileName) throws Exception
+	{	
+		System.out.println("Testing HNMR Knowledge Base: " + fileName);
+				
+		HNMRKnowledgeBase hnmrBase = HNMRPredefinedKnowledgeBase.getHNMRKnowledgeBase(new File(fileName));
+		hnmrBase.configure();
+		
+		if (hnmrBase.errors.isEmpty())
+			System.out.println(hnmrBase.toString());
+		else
+			System.out.println("Errors:\n" + hnmrBase.getAllErrorsAsString());
+		
+	}
+	
+	public static void testHNMRShifts(String smiles, String knowledgeBaseFileName) throws Exception
+	{	
+		System.out.println("Configuring knowledge base ...");
+		HNMRShifts hnmrShifts = new HNMRShifts(new  File(knowledgeBaseFileName));
+		hnmrShifts.getSpinSplitManager().setFlagReportEquivalenceAtomCodes(true);
+		//hnmrShifts.getSpinSplitManager().setNumLayers(4);
+		
+		System.out.println("Testing HNMR with molecule: " + smiles);
+		IAtomContainer mol = TestUtils.moleculeBuilder(smiles);
+		hnmrShifts.setStructure(mol);
+		hnmrShifts.calculateHShifts();
+		
+		System.out.println("Log:\n" + hnmrShifts.getCalcLog());
+		System.out.println();
+		
+		for (HShift hs : hnmrShifts.getHShifts())
+			System.out.println(hs.toString());
+		
+	}
+	
 }

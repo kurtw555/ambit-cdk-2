@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Logger;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
@@ -46,7 +45,7 @@ import org.openscience.cdk.isomorphism.mcss.RMap;
 import org.openscience.cdk.silent.AtomContainer;
 import org.openscience.cdk.silent.SilentChemObjectBuilder;
 import org.openscience.cdk.smiles.SmilesParser;
-import org.openscience.cdk.tools.ILoggingTool;
+import org.openscience.cdk.tools.LoggingTool;
 import org.openscience.cdk.tools.manipulator.AtomContainerManipulator;
 
 import ambit2.core.helper.CDKHueckelAromaticityDetector;
@@ -62,15 +61,14 @@ public class TestSmartsSearch extends TestCase
 	public List<List<Integer>>  matchingAtoms = null;
 	protected UniversalIsomorphismTester uit = new UniversalIsomorphismTester();
 	public SmartsParser smartsParser = new SmartsParser();
-	public Logger logger;
+	public LoggingTool logger;
 	public IQueryAtomContainer mQuery;
 	public IAtomContainer mTarget;
 	SmartsHelper helper = new SmartsHelper(SilentChemObjectBuilder.getInstance());
 	
-	public TestSmartsSearch()
+	public TestSmartsSearch() 
 	{   
-		//logger = new LoggingTool(this);
-		logger = Logger.getLogger (this.getClass().getName());
+		logger = new LoggingTool(this);
 	}
 	
 	public static Test suite() {

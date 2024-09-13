@@ -1,27 +1,48 @@
 package ambit2.sln;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Stack;
 
 import org.openscience.cdk.interfaces.IAtom;
 import org.openscience.cdk.silent.SilentChemObjectBuilder;
 
+import ambit2.sln.dictionary.AtomDictionaryObject;
 import ambit2.sln.dictionary.ISLNDictionaryObject;
+import ambit2.sln.dictionary.MacroAtomDictionaryObject;
+import ambit2.sln.dictionary.MarkushAtomDictionaryObject;
+import ambit2.sln.dictionary.MarkushHelper;
 import ambit2.sln.dictionary.PredefinedSLNDictionary;
 import ambit2.sln.dictionary.SLNDictionary;
 
 public class SLNParser {
+	
+	public static class ParserState {
+		String sln = null;
+		SLNContainer container = null;
+	}
+	
 	private boolean FlagTolerateSpaces = false;
 	private boolean FlagLogExpressionInMolAttribute = false; // Preserved for
 																// future use
 	private boolean FlagAllowBondExpressionInRingClosure = true;
 	private boolean FlagCheckTheNumberOfCoordinates = false;
+	
+	private boolean FlagUseSimpleMacroAtomsInDictionary = true;
+	private boolean FlagUseTypeAsStandardAtomAttribute = true; //e.g. Any[type=6|type=8]
 
 	String sln;
 	SLNContainer container;
+	SLNSubstance slnSubstance;
 	SLNDictionary globalDictionary = null;
 	Stack<SLNAtom> brackets = new Stack<SLNAtom>();
 	ArrayList<SLNParserError> errors = new ArrayList<SLNParserError>();
+	MarkushHelper markushHelper = new MarkushHelper();
+	
+	
+	ArrayList<Integer> localDictionaryObjectBeginPos = new ArrayList<Integer>();
+	ArrayList<Integer> localDictionaryObjectEndPos = new ArrayList<Integer>();
+	
 	// TreeMap<Integer,RingClosure> indexes = new
 	// TreeMap<Integer,RingClosure>();
 
@@ -39,14 +60,25 @@ public class SLNParser {
 	SLNAtomExpression curAtExp;
 	SLNBondExpression curBondExp;
 	String extractError = "";
+	String errorContextPrefix = "";	
 
 	public SLNParser() {
-		globalDictionary = PredefinedSLNDictionary.getDictionary();
 	}
 
 	public SLNParser(SLNDictionary globalDictionary) {
 		this.globalDictionary = globalDictionary;
 	}
+	
+	public int setPredefinedGlobalDictionary() {
+		globalDictionary = PredefinedSLNDictionary.getDictionary(this);
+		
+		if (!globalDictionary.getParserErrors().isEmpty())		
+			System.out.println("Global dictionary errors:" + globalDictionary.getParserErrors());
+		if (!globalDictionary.getCheckErrors().isEmpty())		
+			System.out.println("Global dictionary check errors:" + globalDictionary.getCheckErrors());
+		
+		return 0;
+	}	
 
 	public boolean getFlagTolerateSpaces() {
 		return FlagTolerateSpaces;
@@ -64,27 +96,93 @@ public class SLNParser {
 	public boolean getFlagAllowBondExpressionInRingClosure() {
 		return FlagAllowBondExpressionInRingClosure;
 	}
+	
+	public boolean isFlagUseSimpleMacroAtomsInDictionary() {
+		return FlagUseSimpleMacroAtomsInDictionary;
+	}
+
+	public void setFlagUseSimpleMacroAtomsInDictionary(boolean flagUseSimpleMacroAtomsInDictionary) {
+		FlagUseSimpleMacroAtomsInDictionary = flagUseSimpleMacroAtomsInDictionary;
+	}
+	
+	public boolean isFlagUseTypeAsStandardAtomAttribute() {
+		return FlagUseTypeAsStandardAtomAttribute;
+	}
+
+	public void setFlagUseTypeAsStandardAtomAttribute(boolean flagUseTypeAsStandardAtomAttribute) {
+		FlagUseTypeAsStandardAtomAttribute = flagUseTypeAsStandardAtomAttribute;
+	}
+	
+	public SLNDictionary getGlobalDictionary() {
+		return globalDictionary;
+	}
+
+	public void setGlobalDictionary(SLNDictionary globalDictionary) {
+		this.globalDictionary = globalDictionary;
+	}
 
 	public SLNContainer parse(String sln) {
 		this.sln = sln;
 		container = new SLNContainer(SilentChemObjectBuilder.getInstance());
 		container.setGlobalDictionary(globalDictionary);
 		errors.clear();
+				
+		handleLocalDictionary();
+				
 		init();
 		parse();
 		return container;
 	}
-
+	
+	public SLNSubstance parseSLNSubstance(String sln) {
+		this.sln = sln;
+		slnSubstance = new SLNSubstance();
+		container = new SLNContainer(SilentChemObjectBuilder.getInstance());
+		container.setGlobalDictionary(globalDictionary);
+		errors.clear();
+				
+		handleLocalDictionary();
+		
+		init();
+		parse();
+		
+		//If the slnSubstance contains more than one container, 
+		//previous containers are already added 
+		slnSubstance.containers.add(container);
+		
+		return slnSubstance;
+	}
+	
+	public void handleLocalDictionary() {
+		nChars = sln.length(); //simple init
+		findDictionaryObjectPositions();
+		SLNDictionary locDictionary = parseLocalDictionaryObjects();
+		container.setLocalDictionary(locDictionary);
+	}
+	
 	void init() {
 		nChars = sln.length();
 		prevAtom = null;
 		curChar = 0;
 		brackets.clear();
-		curBond = null;
-		// indexes.clear();
-		// TODO ?
+		curBond = null;		
+	}
+	
+	ParserState getState() {
+		ParserState state = new ParserState();
+		state.sln = sln;
+		state.container = container;
+		return state;
+	}
+	
+	void restoreState (ParserState state) {
+		sln = state.sln;
+		container = state.container;
 	}
 
+	/*
+	 * Basic parsing of a SLNContainer
+	 */
 	void parse() {
 		// default bond is set to be single bond
 		curBond = new SLNBond(SilentChemObjectBuilder.getInstance());
@@ -93,10 +191,9 @@ public class SLNParser {
 		while ((curChar < nChars) && (errors.size() == 0)) {
 
 			if (Character.isLowerCase(sln.charAt(curChar))
-					|| Character.isDigit(sln.charAt(curChar))) {
-				errors.add(new SLNParserError(sln,
-						"Incorrect begining of an atom!", curChar, ""));
-
+					|| Character.isDigit(sln.charAt(curChar))) 
+			{
+				newError("Incorrect begining of an atom!", curChar, "");
 				curChar++;
 				continue;
 			}
@@ -117,43 +214,63 @@ public class SLNParser {
 		// extract atom name
 		String atomName = extractAtomName();
 		int atomType = -1;
+		ISLNDictionaryObject dictObj = null;
 
-		// analyze atomName
-		if (globalDictionary.containsObject(atomName,
-				ISLNDictionaryObject.Type.ATOM)) {
-			atomType = SLNConst.GlobDictOffseet;
-		} else {
-			if (container.getLocalDictionary() != null) {
-				atomType = SLNConst.LocalDictOffseet;
-			} else {
-				//index 0 is included for "Any" atom support
-				for (int i = 0; i < SLNConst.elSymbols.length; i++)
-					if (atomName.equals(SLNConst.elSymbols[i]))
-						atomType = i;
-			}
+		//Analyze atomName
+		if (globalDictionary != null && globalDictionary.containsObject(atomName)) 
+		{
+			atomType = SLNConst.GlobalDictOffseet;
+			dictObj = globalDictionary.getDictionaryObject(atomName);
+		} 
+		else if (container.getLocalDictionary() != null && 
+				container.getLocalDictionary().containsObject(atomName)) 
+		{				 
+			atomType = SLNConst.LocalDictOffseet;
+			dictObj = container.getLocalDictionary().getDictionaryObject(atomName);
+		} 
+		else {
+			//index 0 is included for "Any" atom support
+			for (int i = 0; i < SLNConst.elSymbols.length; i++)
+				if (atomName.equals(SLNConst.elSymbols[i]))
+					atomType = i;
 		}
 
 		if (atomType == -1)
-			errors.add(new SLNParserError(sln, "Incorrect atom name", curChar,
-					""));
+			newError("Incorrect atom name " + atomName, curChar,"");
 
 		SLNAtom newAtom = new SLNAtom(SilentChemObjectBuilder.getInstance());
 		newAtom.atomType = atomType;
 		newAtom.atomName = atomName;
-
+		if (dictObj!= null)
+			newAtom.dictObj = dictObj;
+		
 		// The SLN parser allows H atoms to be before or after atoms expression
 		// i.e. CH[S=R] and C[S=R]H are both correct variants
 		boolean ReadHAtoms = false;
-
+				
 		if (curChar < nChars)
-			if (sln.charAt(curChar) == 'H') {
+			if (sln.charAt(curChar) == 'H') 
+			{
+				//Check whether H symbol is the beginning 
+				//of a following atom name e.g. 'Hg' or 'Hev'
+				if ((curChar+1) < nChars)
+					if (Character.isLowerCase(sln.charAt(curChar+1)) || 
+							sln.charAt(curChar+1) == '_')
+					{							
+						addAtom(newAtom);
+						return;
+					}
+				
 				int nH = 1;
 				curChar++;
+				
 				if (curChar < nChars)
+				{	
 					if (Character.isDigit(sln.charAt(curChar)))
 						nH = getIntegerFromSequence(100);
+				}	
 				if (nH < -1)
-					errors.add(new SLNParserError(sln, "Incorrect number of H atoms", curChar,""));
+					newError("Incorrect number of H atoms", curChar,"");
 				newAtom.numHAtom = nH;
 				ReadHAtoms = true;
 			}
@@ -162,7 +279,7 @@ public class SLNParser {
 			if (sln.charAt(curChar) == '[') {
 				String atomExpression = extractAtomExpression();
 				analyzeAtomExpression(atomExpression);
-				newAtom.atomExpression = curAtExp;
+				newAtom.atomExpression = curAtExp;				
 
 				// Transfer the id info from AtomExpression to SLNAtom object
 				// (this information is duplicated)
@@ -178,7 +295,18 @@ public class SLNParser {
 			}
 
 		if (curChar < nChars)
-			if (sln.charAt(curChar) == 'H') {
+			if (sln.charAt(curChar) == 'H') 
+			{
+				//Check whether H symbol is the beginning 
+				//of a following atom name e.g. 'Hg' or 'Hev'
+				if ((curChar+1) < nChars)
+					if (Character.isLowerCase(sln.charAt(curChar+1)) || 
+							sln.charAt(curChar+1) == '_')
+					{							
+						addAtom(newAtom);
+						return;
+					}
+				
 				if (ReadHAtoms)
 					newError(
 							"H atoms are specified before and after atom attributes",
@@ -190,7 +318,7 @@ public class SLNParser {
 						if (Character.isDigit(sln.charAt(curChar)))
 							nH = getIntegerFromSequence(9);
 					if (nH == -1)
-						errors.add(new SLNParserError(sln, "Incorrect number of H atoms", curChar,""));
+						newError("Incorrect number of H atoms", curChar,"");
 					newAtom.numHAtom = nH;
 				}
 			}
@@ -204,7 +332,8 @@ public class SLNParser {
 		curChar++;
 		while (curChar < nChars) {
 			if (Character.isLowerCase(sln.charAt(curChar))
-					|| Character.isDigit(sln.charAt(curChar)))
+					|| Character.isDigit(sln.charAt(curChar))
+					|| (sln.charAt(curChar)== '_'))
 				curChar++;
 			else
 				break;
@@ -390,7 +519,7 @@ public class SLNParser {
 					continue;
 				}
 
-				// Read attribute value (after comparson operation: '=', "<",...)
+				// Read attribute value (after comparison operation: '=', "<",...)
 				startPos = pos;
 				while (pos < atomExpr.length()) {
 					if (Character.isLetter(atomExpr.charAt(pos))
@@ -398,13 +527,28 @@ public class SLNParser {
 							|| (atomExpr.charAt(pos) == '+')
 							|| (atomExpr.charAt(pos) == '-')
 							|| (atomExpr.charAt(pos) == '.')
-							|| (atomExpr.charAt(pos) == '*'))
+							|| (atomExpr.charAt(pos) == '*')
+							|| (atomExpr.charAt(pos) == ','))
 						pos++;
 					else
 						break;
 				}
 
 				String attrValue = atomExpr.substring(startPos, pos);
+				
+				//Handle attribute v for macro/markush atom valences"
+				if (attrName.equalsIgnoreCase("v"))
+				{
+					int v[] = extractIntegerList(attrValue);
+					if (extractError.equals("")) {
+						curAtExp.valences = v;
+					} else {
+						newError("Incorrect v value " + attrValue, curChar, "");
+					}					
+					//Attribute v is not registered as SLNExpressionToken
+					//It is directly stored in SLNAtomExpression object
+					return;
+				}
 
 				// Register attribute with a value
 				SLNExpressionToken newToken = analyzeAtomAttribute(attrName,
@@ -551,7 +695,7 @@ public class SLNParser {
 			}
 		}
 
-		// Handle query atom attribute "convered"- c
+		// Handle query atom attribute "covered"- c
 		if (name.equals("c")) {
 			if (value == null)
 			{
@@ -633,8 +777,11 @@ public class SLNParser {
                 return null;
             }
         }
+        
 
-
+        /*
+         * This is not done here
+         * 
 		// Handle query atom attribute v - Markush and macro atom valence
 		// information
 		if (name.equals("v")) {
@@ -648,6 +795,8 @@ public class SLNParser {
 				return null;
 			}
 		}
+		*/		
+		
 
 		// Handle atom attribute heavy atom count
 		if (name.equals("hac")) {
@@ -759,6 +908,36 @@ public class SLNParser {
 			}
 		}
 		
+		// Handle query atom attribute rbc - ring bond count of an atom
+		if (name.equals("rbc")) {
+			int rbc = extractInteger(value);
+			if (extractError.equals("")) {
+				SLNExpressionToken token = new SLNExpressionToken(
+						SLNConst.QA_ATTR_rbc, rbc);
+				return token;
+			} else {
+				newError("Incorrect tbo value " + value, curChar, "");
+				return null;
+			}
+		}
+		
+				
+		// Handle query atom attribute type
+		if (name.equals("type") && FlagUseTypeAsStandardAtomAttribute) 
+		{
+			//If FlagUseTypeAsStandardAtomAttribute = false it is treated as user defined
+			int type = extractInteger(value);
+			if (extractError.equals("")) {
+				SLNExpressionToken token = new SLNExpressionToken(
+						SLNConst.QA_ATTR_type, type);
+				return token;
+			} else {
+				newError("Incorrect atom type attribute value " + value,
+						curChar, "");
+				return null;
+			}			
+		}
+		
 		// By default it is an user defined attribute
 		if (value != null)
 			if (value.equals(""))
@@ -798,7 +977,7 @@ public class SLNParser {
 	}
 
 	void newError(String msg, int pos, String param) {
-		SLNParserError error = new SLNParserError(sln, msg, pos, param);
+		SLNParserError error = new SLNParserError(sln, errorContextPrefix + msg, pos, param);
 		errors.add(error);
 	}
 
@@ -813,7 +992,7 @@ public class SLNParser {
 	public ArrayList<SLNParserError> getErrors() {
 		return (errors);
 	}
-
+	
 	void addAtom(SLNAtom atom) {
 		container.addAtom(atom);
 		if (prevAtom != null) {
@@ -882,6 +1061,12 @@ public class SLNParser {
 			if (prevAtom == null)
 				curComponent = 0;
 			curChar++;
+			break;
+		
+		case '{':
+			//Simple handling: end of the parsing procedure
+			//and jumping to the end of sln string
+			curChar = nChars;
 			break;
 
 		default:
@@ -1246,13 +1431,31 @@ public class SLNParser {
 		int openBrackets = 1;
 		while ((curChar < nChars) && (openBrackets > 0) && (errors.size() == 0)) {
 			if (sln.charAt(curChar) == '<')
-				openBrackets++;
+			{
+				if ( (curChar+1) < nChars)
+				{	
+					//Check for <= comparison operation
+					if (sln.charAt(curChar+1) != '=')					
+						openBrackets++;
+				}
+				else
+					openBrackets++;
+			}	
 			else if (sln.charAt(curChar) == '>')
-				openBrackets--;
+			{	
+				if ( (curChar+1) < nChars)
+				{	
+					//Check for <= comparison operation
+					if (sln.charAt(curChar+1) != '=')					
+						openBrackets--;
+				}
+				else					
+					openBrackets--;
+			}	
 
 			curChar++;
 		}
-
+		
 		return sln.substring(startPos, curChar - 1);
 	}
 
@@ -1288,7 +1491,9 @@ public class SLNParser {
 
 				// TODO add check for ':=' and '^=' attribute assignments
 
-				String attrName = molAttr.substring(startPos, pos);
+				
+				String attrName = molAttr.substring(startPos, pos);				
+				/*
 				if (pos < molAttr.length()) {
 					if (molAttr.charAt(pos) == '=')
 						pos++;
@@ -1299,8 +1504,86 @@ public class SLNParser {
 							curChar, "");
 					return;
 				}
-
-				// Read attribute value (after '=')
+				*/
+				
+				//Read comparison operation
+				int comparisonOperation = SLNConst.CO_NO_COMPARISON;				
+				
+				if (pos < molAttr.length()) 
+				{					
+					if (molAttr.charAt(pos) == '=')						
+					{	
+						comparisonOperation = SLNConst.CO_EQUALS;
+						pos++;
+					}	
+					else if (molAttr.charAt(pos) == '<')						
+					{	
+						comparisonOperation = SLNConst.CO_LESS_THAN;
+						pos++;
+						if (pos < molAttr.length())
+						{	
+							if (molAttr.charAt(pos) == '=')
+							{
+								comparisonOperation = SLNConst.CO_LESS_OR_EQUALS;
+								pos++;
+							}
+							else if (molAttr.charAt(pos) == '>')
+							{
+								comparisonOperation = SLNConst.CO_DIFFERS;
+								pos++;
+							}	
+						}	
+					}
+					else if (molAttr.charAt(pos) == '>')
+					{
+						comparisonOperation = SLNConst.CO_GREATER_THAN;
+						pos++;
+						if (pos < molAttr.length())
+							if (molAttr.charAt(pos) == '=')
+							{
+								comparisonOperation = SLNConst.CO_GREATER_OR_EQUALS;
+								pos++;
+							}
+					}
+					else if (molAttr.charAt(pos) == '!') 
+					{
+						//Handle '!=' differs comparison operation
+						pos++;
+						if (pos < molAttr.length())
+						{
+							if (molAttr.charAt(pos) == '=')
+							{	
+								comparisonOperation = SLNConst.CO_DIFFERS;
+								pos++;
+							}
+							else 
+							{
+								newError("Incorrect comparison operation for attribute " + attrName + " ",
+									curChar, "");
+								return;
+							}	
+						}
+					}
+				}
+				
+				//Check for the case "NO_COMPARISON"				 
+				if (comparisonOperation == SLNConst.CO_NO_COMPARISON)
+				{
+					newError("Missing comparison operation for attribute " + attrName + " ",
+							curChar, "");
+					return;
+				}
+				
+				//Check for no value attribute (end reached)
+				if (pos >= molAttr.length()) 
+				{	
+					newError("Missing value for attribute " + attrName + " ",
+							curChar, "");
+					return;
+				}
+				
+				
+				// Read attribute value (after =, >=, <=, >, < or != )
 				startPos = pos;
 				while (pos < molAttr.length()) {
 					/*
@@ -1316,7 +1599,7 @@ public class SLNParser {
 
 				String attrValue = molAttr.substring(startPos, pos);
 
-				registerMoleculeAttribute(attrName, attrValue);
+				registerMoleculeAttribute(attrName, attrValue, comparisonOperation);
 				continue;
 			}
 
@@ -1370,10 +1653,12 @@ public class SLNParser {
 		}
 	}
 
-	void registerMoleculeAttribute(String name, String value) {
+	void registerMoleculeAttribute(String name, String value, int comparisonOperation) {
 		// System.out.println("Registering Molecule Attribute: " + name + "  " +
 		// value);
-
+		
+		//TODO check comparisonOperation for the standard attributes
+		
 		// Handle predefined molecule attributes
 		if (name.equals("name")) {
 			container.getAttributes().name = value;
@@ -1399,6 +1684,12 @@ public class SLNParser {
 			parser3DCoordinates(value);
 			return;
 		}
+		
+		//Handle attribute v for macro/markush atom valences"
+		if (name.equalsIgnoreCase("v")) {
+			parseValencesAttribute(value);
+			return;
+		}
 
 		// By default it is an user defined attribute
 		if (name.equals("")) {
@@ -1412,6 +1703,8 @@ public class SLNParser {
 			return;
 		} else {
 			container.getAttributes().userDefiendAttr.put(name, value);
+			container.getAttributes().userDefiendAttrComparisonOperation.put(name, comparisonOperation);
+			
 			// System.out.println("put " + name + " = " + value);
 		}
 	}
@@ -1539,6 +1832,17 @@ public class SLNParser {
 				return;
 			}
 	}
+	
+	void parseValencesAttribute(String attrValue) {		
+		int v[] = extractIntegerList(attrValue);
+		if (extractError.equals("")) {			
+			container.getAttributes().valences = v;
+		} else {
+			newError("Incorrect v value " + attrValue, curChar, "");
+		}
+		return;
+	}
+
 
 	String extractBracketsFromPosition(String target, int pos) {
 		if (target.charAt(pos) == '(') {
@@ -1571,6 +1875,33 @@ public class SLNParser {
 			return 0;
 		}
 	}
+	
+	int[] extractIntegerList(String valueString) {
+		extractError = "";
+		String tokens[] = valueString.split(",");
+		int x[] = new int[tokens.length];
+		
+		for (int i = 0; i < tokens.length; i++)
+		{
+			if (tokens[i].isEmpty())
+			{
+				extractError = "Empty value at pos " + (i+1) + " in integer list";
+				return null;
+			}
+			try {
+				int value;
+				if (tokens[i].charAt(0) == '+')
+					value = Integer.parseInt(tokens[i].substring(1));
+				else
+					value = Integer.parseInt(tokens[i]);
+				x[i] = value;
+			} catch (Exception e) {
+				extractError = "Incorrect integer value " + tokens[i];
+				return null;
+			}
+		}
+		return x;
+	}
 
 	double extractDouble(String valueString) {
 		extractError = "";
@@ -1585,6 +1916,208 @@ public class SLNParser {
 			extractError = "Incorrect double value " + valueString;
 			return 0.0;
 		}
+	}
+	
+	void findDictionaryObjectPositions() {
+		localDictionaryObjectBeginPos.clear();
+		localDictionaryObjectEndPos.clear();
+		
+		int pos = 0;
+		int openBrackets = 0;
+		int beginPos = -1; 
+		
+		while (pos < nChars)
+		{
+			if (sln.charAt(pos) == '{') 
+			{	
+				if (openBrackets >= 1)
+				{
+					newError("Incorrect opening bracket '{'", pos, "");
+					return;
+				}
+				else
+				{	
+					openBrackets++;
+					beginPos = pos;
+				}	
+			}
+			
+			if (sln.charAt(pos) == '}') 
+			{
+				if (openBrackets != 1)
+				{
+					newError("Incorrect closing bracket '}'", pos, "");
+					return;
+				}
+				else
+				{
+					openBrackets--;
+					//Register new dictionary object substring
+					localDictionaryObjectBeginPos.add(beginPos);
+					localDictionaryObjectEndPos.add(pos);
+					//System.out.println(sln.substring(beginPos,pos+1));
+				}	
+			}
+			
+			pos++;
+		}
+		
+		if (openBrackets >= 1)
+		{
+			newError("Missing closing bracket '{'", pos, "");
+			return;
+		}
+	}
+	
+	SLNDictionary parseLocalDictionaryObjects() {
+		
+		if (!errors.isEmpty())
+			return null;
+		
+		if (localDictionaryObjectBeginPos.isEmpty())
+			return null;
+		
+		SLNDictionary dict = new SLNDictionary(); 
+		
+		for (int i = 0; i < localDictionaryObjectBeginPos.size(); i++)
+		{
+			int beginPos = localDictionaryObjectBeginPos.get(i)+1;
+			int endPos = localDictionaryObjectEndPos.get(i);
+			
+			String locDictObjStr = sln.substring(beginPos,endPos);
+			//System.out.println(locDictObjStr);
+			ISLNDictionaryObject dictObj = parseDictionaryObject(locDictObjStr);
+			if (dictObj != null)
+				dict.addDictionaryObject(dictObj);
+		}
+		
+		dict.checkDictionary();
+		if (!dict.getCheckErrors().isEmpty()) {
+			for (int i = 0; i < dict.getCheckErrors().size(); i++ )
+			newError(dict.getCheckErrors().get(i), 0, "");
+		}
+			
+		
+		return dict;
+	}
+	
+	public ISLNDictionaryObject parseDictionaryObject(String dictObjectString)
+	{
+		//Check for Markush atom
+		markushHelper.setSLNString(dictObjectString);		
+		if (markushHelper.isMarkushAtomSLNString()) 
+			return (parseMarkushDictionaryObject(dictObjectString));
+		
+		return parseMacroAtomDictionaryObject(dictObjectString, true);
+	}
+	
+		
+	public ISLNDictionaryObject parseMacroAtomDictionaryObject(String dictObjectString, boolean parseName)
+	{
+		if (dictObjectString.isEmpty())
+			return null;
+		
+		int pos = 0;
+		int n = dictObjectString.length();
+		String dictObjName = null;
+		
+		if (parseName) 
+		{	
+			//Handle dictionary object name
+			
+			if (Character.isUpperCase(dictObjectString.charAt(0)))
+				pos++;
+			else
+			{
+				newError("Incorrect dictionary object: " + dictObjectString, pos, "");
+				return null;
+			}
+	
+			while ((pos < n) && 
+					(Character.isLowerCase(dictObjectString.charAt(pos)) 
+							|| Character.isDigit(dictObjectString.charAt(pos))
+							|| dictObjectString.charAt(pos) == '_')
+					)
+			{
+				pos++;
+			}
+
+			if (pos == n)
+			{
+				newError("Incorrecr dictionary object: " + dictObjectString, -1, "");
+				return null;
+			}
+			
+			dictObjName = dictObjectString.substring(0,pos); 
+			
+			if (dictObjectString.charAt(pos) != ':')
+			{
+				newError("Incorrecr dictionary object: " + dictObjectString, -1, "");
+				return null;
+			}
+			else
+				pos++;
+			
+			if (pos == n)
+			{
+				newError("Incorrect dictionary object: " + dictObjectString, -1, "");
+				return null;
+			}
+		}
+				
+		
+		ParserState state = getState();
+		errorContextPrefix = "Parsing macro/markush atom: " + dictObjectString + ": ";
+		
+		//Parsing a macro atom
+		sln = dictObjectString.substring(pos);
+		container = new SLNContainer(SilentChemObjectBuilder.getInstance());
+		
+		init();
+		parse();
+		
+		ISLNDictionaryObject dictObj = null;
+		if (errors.isEmpty())
+		{	
+			if (FlagUseSimpleMacroAtomsInDictionary && container.getAtomCount() == 1)
+				dictObj = new AtomDictionaryObject(dictObjName, dictObjectString, container);				
+			else
+				dictObj = new MacroAtomDictionaryObject(dictObjName, dictObjectString, container);
+		}
+		
+		restoreState(state);
+		errorContextPrefix = "";
+		
+		return dictObj;
+	}
+	
+	public ISLNDictionaryObject parseMarkushDictionaryObject(String dictObjectString)
+	{	
+		markushHelper.analyzeMarkushString();
+		
+		if (!markushHelper.getErrors().isEmpty())
+		{	
+			newError(markushHelper.getErrorMessages(), 0, dictObjectString);
+			return null;
+		}
+		
+		List<ISLNDictionaryObject>  macroAtoms = new ArrayList<ISLNDictionaryObject>();
+		List<String> components = markushHelper.getComponentList();
+		
+		for (int i = 0; i < components.size(); i++)
+		{	
+			//System.out.println("  " + components.get(i));
+			ISLNDictionaryObject dictObj = parseMacroAtomDictionaryObject(components.get(i), false);
+			
+			if (dictObj != null)
+				macroAtoms.add(dictObj);
+		}
+		
+		MarkushAtomDictionaryObject markushAtom = 
+				new MarkushAtomDictionaryObject(markushHelper.getMarkushAtomName(), 
+						dictObjectString, macroAtoms);
+		
+		return markushAtom;
 	}
 
 }

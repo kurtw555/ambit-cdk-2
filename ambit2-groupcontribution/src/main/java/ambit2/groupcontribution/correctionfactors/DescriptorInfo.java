@@ -1,10 +1,14 @@
 package ambit2.groupcontribution.correctionfactors;
 
+import ambit2.groupcontribution.transformations.IValueTransformation;
 
 public class DescriptorInfo 
 {
-	double contribution = 0.0;
-	String name = "";
+	public double contribution = 0.0;
+	public double sd = 0.0;
+	public String fullString = "";
+	public String name = "";
+	public IValueTransformation valueTranform = null;
 	
 	public double getContribution()
 	{
@@ -16,6 +20,14 @@ public class DescriptorInfo
 		this.contribution = contribution;
 	}
 	
+	public double getSD() {
+		return sd;
+	}
+	
+	public void setSD(double sd) {
+		this.sd = sd;
+	}
+	
 	public String getName()
 	{
 		return name;
@@ -24,6 +36,22 @@ public class DescriptorInfo
 	public void setName(String name)
 	{
 		this.name = name;
+	}
+	
+	public double transform(double value)
+	{
+		if (valueTranform == null)
+			return value;
+		else
+		{	
+			try {
+				double res = valueTranform.transform(value);
+				return res;
+			}
+			catch (Exception x) {
+				return 0.0;
+			}
+		}	
 	}
 	
 	//public int calculateFor(IAtomContainer mol);

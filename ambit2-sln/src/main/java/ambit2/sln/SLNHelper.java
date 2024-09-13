@@ -14,7 +14,7 @@ import ambit2.smarts.TopLayer;
 
 public class SLNHelper 
 {	
-	public boolean FlagPreserveOriginalAtomID = true;
+	public boolean FlagPreserveOriginalAtomID = false;  //value true used mainly for testing purposes
 	//public boolean FlagRingColusuresBeforeBrunches = true;
 	
 	class AtomSLNNode
@@ -26,7 +26,7 @@ public class SLNHelper
 	private HashMap<IAtom,AtomSLNNode> nodes = new HashMap<IAtom,AtomSLNNode>();
 	private HashMap<IAtom,TopLayer> firstSphere = new HashMap<IAtom,TopLayer>();
 	List<IBond> ringClosures = new ArrayList<IBond>();
-	private HashMap<IAtom,Integer> newAtomIDs = new HashMap<IAtom,Integer>();
+	//private HashMap<IAtom,Integer> newAtomIDs = new HashMap<IAtom,Integer>();
 	private int maxAtomID = -1;
 	private int nAtom;
 	private int nBond;
@@ -38,9 +38,9 @@ public class SLNHelper
 		for (int i = 0; i < container.getAtomCount(); i++)
 		{	
 			SLNAtom at = (SLNAtom)container.getAtom(i); 
-			sb.append("  #" + i + "  ");
-			sb.append(at.atomType + "  " + at.atomName + "  H" + at.numHAtom + "  " + at.toString());
-			//TODO print atom attributes 
+			sb.append("  #" + (i+1) + "  ");
+			sb.append( "" + ((at.atomType< SLNConst.GlobalDictOffseet)?at.atomType:0) 
+					+ "  " + at.atomName + "  H" + at.numHAtom + "  " + at.toString());
 			sb.append("\n");
 		}	
 		return(sb.toString());
@@ -56,8 +56,8 @@ public class SLNHelper
 			SLNAtom at1 = (SLNAtom)bo.getAtom(1);
 			int at0_num = container.getAtomNumber(at0);
 			int at1_num = container.getAtomNumber(at1);
-			sb.append("  #" + i + " atoms (" + at0_num + "," + at1_num + ") order "  + bo.toString());
-
+			sb.append("  #" + (i+1) + " atoms (" + (at0_num + 1) + "," + (at1_num + 1) + ") order "  + bo.bondType);
+			
 			sb.append("\n");
 		}
 		return(sb.toString());
@@ -89,6 +89,31 @@ public class SLNHelper
 		return(sb.toString());
 	}
 	
+	static public String getCTString(SLNContainer container)
+	{
+		StringBuffer sb = new StringBuffer();
+		sb.append("Atoms:\n");
+		for (int i = 0; i < container.getAtomCount(); i++)
+		{	
+			SLNAtom at = (SLNAtom)container.getAtom(i); 
+			sb.append("  " + (i+1));
+			sb.append("  " + at.atomName + ((at.numHAtom>0)?("  H" + at.numHAtom):""));
+			sb.append("\n");
+		}
+		sb.append("Bonds:\n");
+		for (int i = 0; i < container.getBondCount(); i++)
+		{
+			SLNBond bo = (SLNBond)container.getBond(i);  
+			SLNAtom at0 = (SLNAtom)bo.getAtom(0);
+			SLNAtom at1 = (SLNAtom)bo.getAtom(1);
+			int at0_num = container.getAtomNumber(at0);
+			int at1_num = container.getAtomNumber(at1);
+			sb.append("  " + (at0_num + 1) + "  " + (at1_num + 1) + "  "  + bo.bondType);			
+			sb.append("\n");
+		}		
+		return(sb.toString());
+	}	
+	
 	static public void clearAtomIDs(SLNContainer container)
 	{
 		for (IAtom at : container.atoms())
@@ -107,7 +132,12 @@ public class SLNHelper
 	{
 		at.atomID = ID;
 		if (at.atomExpression != null)
+			at.atomExpression.atomID = ID;		
+		else
+		{
+			at.atomExpression = new SLNAtomExpression();
 			at.atomExpression.atomID = ID;
+		}
 	}
 	
 	private void analyzeAtomIDs(SLNContainer container)
@@ -137,7 +167,7 @@ public class SLNHelper
 		determineFirstSheres(container);
 		nodes.clear();
 		ringClosures.clear();
-		newAtomIDs.clear();
+		//newAtomIDs.clear();
 		maxAtomID = -1;
 		
 		if (FlagPreserveOriginalAtomID)
@@ -153,8 +183,15 @@ public class SLNHelper
 		node.atom = container.getAtom(0);
 		nodes.put(node.atom, node);
 		String attr = container.getAttributes().toString();
-		return(nodeToString(node.atom) + attr);
+		
+		//Another level of recursion
+		String locDictionary = "";
+		if (container.getLocalDictionary() != null)
+			locDictionary = container.getLocalDictionary().toSLN();
+		
+		return(nodeToString(node.atom) + attr + locDictionary);
 	}
+	
 	
 	String nodeToString(IAtom atom)
 	{
